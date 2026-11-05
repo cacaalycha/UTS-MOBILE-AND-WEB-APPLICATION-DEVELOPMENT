@@ -70,41 +70,7 @@ Desain antarmuka aplikasi dibuat menggunakan Figma sebagai acuan dalam proses pe
 
 **Catatan:** Versi saat ini menggunakan mock data dan mock repository. Firebase Firestore belum diintegrasikan ke dalam aplikasi.
 
-## 6. Struktur Folder Project
-
-```text
-caseipcaca/
-├── android/
-├── ios/
-├── lib/
-│   ├── core/
-│   │   ├── constants/
-│   │   ├── theme/
-│   │   └── utils/
-│   ├── data/
-│   │   ├── mock/
-│   │   └── repositories/
-│   ├── models/
-│   ├── pages/
-│   │   ├── admin/
-│   │   ├── auth/
-│   │   ├── cart/
-│   │   ├── catalog/
-│   │   ├── home/
-│   │   ├── model/
-│   │   └── order/
-│   ├── providers/
-│   ├── router/
-│   ├── widgets/
-│   ├── app.dart
-│   └── main.dart
-├── test/
-├── web/
-├── pubspec.yaml
-└── README.md
-```
-
-## 7. Cara Menjalankan Project
+## 6. Cara Menjalankan Project
 
 ### Persyaratan
 Sebelum menjalankan aplikasi, pastikan perangkat sudah memiliki:
@@ -163,7 +129,7 @@ flutter run -d chrome
 
 Pastikan dukungan Flutter Web sudah tersedia pada instalasi Flutter yang digunakan.
 
-## 8. Screenshot Aplikasi
+## 7. Screenshot Aplikasi
 
 Berikut merupakan dokumentasi tampilan aplikasi Case iPhone Caca.
 
@@ -187,14 +153,6 @@ Berikut merupakan dokumentasi tampilan aplikasi Case iPhone Caca.
 
 ### G. Halaman Admin
 ![Halaman Admin](screenshots/admin-dashboard.png)
-
-*Catatan: Screenshot di atas merupakan tempat untuk menampilkan dokumentasi aplikasi. Masukkan gambar hasil screenshot aplikasi ke dalam folder `screenshots` di repository dengan nama file yang sesuai.*
-
-## 9. Video Demo Aplikasi
-
-Video demonstrasi aplikasi Case iPhone Caca dapat dilihat melalui tautan berikut:
-
-https://youtu.be/eZ7dYPxLWVA
 
 ---
 
