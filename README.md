@@ -133,26 +133,29 @@ Pastikan dukungan Flutter Web sudah tersedia pada instalasi Flutter yang digunak
 
 Berikut merupakan dokumentasi tampilan aplikasi Case iPhone Caca.
 
-### A. Halaman Beranda
-![Halaman Beranda](screenshots/beranda.png)
+### A. Halaman Login
+![Halaman Beranda](screenshots/01-login.png)
 
-### B. Halaman Katalog
-![Halaman Katalog](screenshots/katalog.png)
+### B. Halaman Beranda
+![Halaman Beranda](screenshots/02-beranda.png)
 
-### C. Halaman Detail Produk
-![Halaman Detail Produk](screenshots/detail-produk.png)
+### C. Halaman Katalog
+![Halaman Katalog](screenshots/03-katalog.png)
 
-### D. Halaman Pilih Model iPhone
-![Halaman Pilih Model iPhone](screenshots/pilih-model.png)
+### D. Halaman Detail Produk
+![Halaman Detail Produk](screenshots/04-detail.png)
 
-### E. Halaman Keranjang
-![Halaman Keranjang](screenshots/keranjang.png)
+### E. Halaman Pilih Model iPhone
+![Halaman Pilih Model iPhone](screenshots/05-pilih-model.png)
 
-### F. Halaman Checkout
-![Halaman Checkout](screenshots/checkout.png)
+### F. Halaman Keranjang
+![Halaman Keranjang](screenshots/06-keranjang.png)
 
-### G. Halaman Admin
-![Halaman Admin](screenshots/admin-dashboard.png)
+### G. Halaman Checkout
+![Halaman Checkout](screenshots/07-checkout.png)
+
+### H. Halaman Admin
+![Halaman Admin](screenshots/08-admin-dashboard.png)
 
 ---
 
