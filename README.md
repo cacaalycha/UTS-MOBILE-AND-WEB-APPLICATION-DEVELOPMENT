@@ -155,7 +155,7 @@ Berikut merupakan dokumentasi tampilan aplikasi Case iPhone Caca.
 ![Halaman Checkout](screenshots/07-checkout.png)
 
 ### H. Halaman Admin
-![Halaman Admin](screenshots/08-admin-dashboard.png)
+![Halaman Admin](screenshots/08-admin.png)
 
 ---
 
