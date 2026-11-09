@@ -75,16 +75,19 @@ class _MasukPageState extends State<MasukPage> {
           backgroundColor: AppColors.error,
         ),
       );
+      // Halaman bisa sudah dicopot CekStatusLogin saat proses selesai.
+      if (mounted) setState(() => _sedangProses = false);
     } catch (_) {
       pesan.showSnackBar(
         const SnackBar(
           content: Text('Terjadi kesalahan. Silakan coba lagi.'),
         ),
       );
-    } finally {
-      // Halaman bisa sudah dicopot CekStatusLogin saat proses selesai.
       if (mounted) setState(() => _sedangProses = false);
     }
+    // Saat BERHASIL tombol sengaja dibiarkan nonaktif: stream
+    // authStateChanges() segera mengganti halaman, sehingga tombol tidak
+    // sempat menyala kembali dan tidak bisa memicu kirim ulang.
   }
 
   @override
