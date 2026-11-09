@@ -46,3 +46,9 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Konfigurasi project Firebase lokal (Minggu 9).
+# Salin firebase-config.example.json -> firebase-config.json, lalu isi.
+# Isinya bukan rahasia, tetapi tetap tidak di-commit agar repo bersih dan
+# agar GitHub tidak memunculkan peringatan API key.
+firebase-config.json
