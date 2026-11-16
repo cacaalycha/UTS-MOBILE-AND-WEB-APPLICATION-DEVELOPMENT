@@ -7,7 +7,7 @@
 | Nama / NIM | Alysha Syafiya Maisaroh / 23.01.55.0001 |
 | Kelas dan judul aplikasi | Pagi A1 — Case iPhone Caca |
 | Tautan repository GitHub | https://github.com/cacaalycha/UTS-MOBILE-AND-WEB-APPLICATION-DEVELOPMENT |
-| Nama project Firebase | `case-iphone-caca-2301550001` *(sesuaikan dengan nama di Console)* |
+| Nama project Firebase | `case-iphone-caca` |
 | Paket / penyedia | Spark (tanpa billing) / Email-Password saja |
 | Target | Chrome |
 

@@ -8,6 +8,8 @@
 - Demo web (GitHub Pages): https://cacaalycha.github.io/UTS-MOBILE-AND-WEB-APPLICATION-DEVELOPMENT/
 
 > **Pembaruan Minggu 9:** repositori ini sekarang juga memuat alur login **Firebase Authentication** (Email/Password, target Chrome, paket Spark). Lihat [bagian 13](#13-praktikum-minggu-9--firebase-authentication) serta [`docs/LAPORAN_MINGGU_09.md`](docs/LAPORAN_MINGGU_09.md).
+>
+> **Pembaruan Minggu 10:** data katalog dan pesanan kini tersimpan permanen di **Cloud Firestore** (tiga collection `users`, `cases`, `orders`) dan tampil real-time lewat `StreamBuilder`. Lihat [bagian 14](#14-praktikum-minggu-10--cloud-firestore), [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md), dan [`docs/LAPORAN_MINGGU_10.md`](docs/LAPORAN_MINGGU_10.md).
 
 ---
 
@@ -30,7 +32,7 @@ Case iPhone Caca merupakan aplikasi katalog penjualan case iPhone berbasis Flutt
 
 Aplikasi menyediakan pemilihan model iPhone, katalog produk, detail produk, **Compatibility Checker** yang menyaring case berdasarkan model dan tipe cutout kamera, keranjang belanja, checkout dengan validasi form, riwayat pesanan, serta halaman admin untuk kelola produk. Pengguna utamanya adalah pemilik iPhone yang ingin membeli case secara online, dan admin toko sebagai pengelola katalog.
 
-Pada versi UTS ini data masih berupa **mock data / mock repository** (tanpa backend). Mulai Minggu 9, **autentikasi** sudah terhubung ke Firebase Authentication; Firestore untuk data katalog/pesanan menyusul pada Minggu 10. Rancangan database Firestore tersedia di dalam proposal.
+Prototipe UTS memakai **mock data / mock repository** (tanpa backend). Mulai Minggu 9 **autentikasi** terhubung ke Firebase Authentication, dan mulai Minggu 10 **profil pengguna, master case, dan pesanan** tersimpan permanen di Cloud Firestore dalam tiga collection `users`, `cases`, `orders` (operasi Create + Read, real-time). Kedua mode tetap berdampingan: tanpa konfigurasi `FIREBASE_*` aplikasi berjalan sebagai prototipe mock agar pengujian dan demo GitHub Pages tidak bergantung pada cloud. Rancangan database Firestore lengkap ada di proposal dan `docs/firestore-schema.png`.
 
 ## 3. Isi Repositori (Source Code Lengkap)
 
@@ -53,12 +55,18 @@ Pada versi UTS ini data masih berupa **mock data / mock repository** (tanpa back
 | `lib/firebase_options.dart`, `firebase-config.example.json` | Konfigurasi project Firebase via `--dart-define` (tanpa menyimpan nilai di Git) |
 | `lib/utils/validasi_auth.dart` | Validator + terjemahan 7 kode `FirebaseAuthException` (Minggu 9) |
 | `lib/pages/masuk_page.dart`, `lib/pages/cek_status_login.dart`, `lib/pages/halaman_utama.dart` | Halaman Masuk/Daftar dua mode, gerbang `authStateChanges()`, halaman utama + tombol Keluar |
-| `test/` | 7 file widget/unit test, **50 test** (termasuk validator & form Firebase Minggu 9) |
+| `lib/data/data_simulasi.dart` | Model dokumen Firestore Minggu 10: `PenggunaFirestore`, `CaseKatalog`, `PesananFirestore` + 4 case auto-seed |
+| `lib/services/` | `LayananData` (kontrak), `LayananFirestore`, `LayananMemori` (untuk test), `FirestoreStatus` |
+| `lib/pages/minggu10/` | Beranda Firestore, Daftar Case, Form Pesanan, Pesanan Saya |
+| `lib/widgets/components/sapaan_firestore.dart` | Sapaan real-time dari `users/{uid}` |
+| `lib/firebase_katalog_app.dart` | Root mode Firebase: menyuntik `Provider<LayananData>`, membuat profil & auto-seed `cases` |
+| `firestore.rules` | Aturan keamanan `allow read, write: if request.auth != null;` |
+| `test/` | 10 file widget/unit test, **80 test** (validator & form Minggu 9 + model/layanan/halaman Minggu 10) |
 | `android/`, `ios/`, `web/`, `windows/`, `linux/`, `macos/` | Konfigurasi platform bawaan Flutter (termasuk **Flutter Web**) |
 | `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `.metadata` | Dependensi dan konfigurasi project |
 | `Proyek_UTS_Case_iPhone_Caca_Proposal.docx` / `.pdf` | Proposal UTS lengkap |
-| `docs/` | Diagram user flow, sitemap, wireframe, skema Firestore, panduan & laporan praktikum Minggu 9 |
-| `screenshots/` | 10 screenshot aplikasi UTS + tempat untuk screenshot Firebase Console Minggu 9 |
+| `docs/` | Diagram user flow, sitemap, wireframe, skema Firestore, panduan & laporan praktikum Minggu 9 dan Minggu 10 |
+| `screenshots/` | 10 screenshot aplikasi UTS + screenshot Firebase Console Minggu 9 & Minggu 10 |
 | branch `gh-pages` | Hasil build statis `flutter build web --release` (versi web siap hosting) |
 
 ## 4. Fitur Aplikasi
@@ -82,7 +90,15 @@ Pada versi UTS ini data masih berupa **mock data / mock repository** (tanpa back
 - Halaman utama hanya terbuka setelah login; sesi bertahan setelah refresh browser.
 - Pesan kesalahan yang jelas dari 7 kode `FirebaseAuthException`.
 
-### D. Prioritas Fitur
+### D. Fitur Minggu 10 (Cloud Firestore)
+- **Profil otomatis** — `users/{uid}` dibuat saat daftar/masuk; sapaan nama real-time di Beranda.
+- **Master case** — collection `cases` diisi otomatis 4 dokumen lewat `WriteBatch`, tampil di Daftar Case dan dropdown Form Pesanan.
+- **Form Pesanan (Create)** — validasi jumlah, tanggal, jam; menyimpan dokumen `orders` beserta `nama_case` (denormalisasi) dan `FieldValue.serverTimestamp()`.
+- **Cegah bentrok** — kombinasi `id_pengguna + id_case + tanggal + jam` yang sama ditolak dengan SnackBar, dokumen tidak bertambah.
+- **Pesanan Saya (Read)** — `StreamBuilder` + `.snapshots()` terfilter per `uid`, menangani keadaan loading / error / kosong, dan bertahan setelah refresh Chrome.
+- **Security Rules** — hanya pengguna terautentikasi yang boleh membaca/menulis.
+
+### E. Prioritas Fitur
 Urutan prioritas: (1) pemilihan model iPhone, (2) Compatibility Checker, (3) katalog & detail, (4) keranjang + checkout tervalidasi, (5) riwayat pesanan, (6) admin. Alur inti "pilih model → cari case yang cocok → pesan" diprioritaskan karena itulah yang langsung menyelesaikan masalah salah beli case.
 
 ## 5. Desain UI/UX dan Prototype Figma
@@ -121,7 +137,7 @@ Berisi: problem statement, persona, user story, kebutuhan fungsional & non-fungs
 | Figma | Perancangan UI/UX dan prototype |
 | GitHub / GitHub Pages | Source code, riwayat commit, dan hosting demo web |
 | Firebase Authentication (`firebase_core` 5.1.0, `firebase_auth` 7.0.1) | Praktikum Minggu 9: daftar, masuk, keluar, cek status login (Email/Password, target Chrome) |
-| Firebase Firestore | **Rancangan** database untuk Minggu 10 (belum diintegrasikan) |
+| Cloud Firestore (`cloud_firestore` 7.1.0) | Minggu 10: `users`, `cases`, `orders` — `WriteBatch`, `FieldValue.serverTimestamp()`, `.snapshots()` + `StreamBuilder`, aturan `request.auth != null` |
 
 ## 8. Cara Menjalankan Project
 
@@ -159,12 +175,23 @@ flutter run
 # Web di Chrome — mode prototipe UTS (mock, tanpa Firebase)
 flutter run -d chrome
 
-# Web di Chrome — praktikum Minggu 9 (mode Firebase)
+# Web di Chrome — praktikum Minggu 9 + Minggu 10 (mode Firebase + Firestore)
 flutter run -d chrome --dart-define-from-file=firebase-config.json
 
-# Atau build web statis lalu sajikan folder build/web
+# Build release mode Firebase (hasil di build/web)
+MSYS_NO_PATHCONV=1 flutter build web --release \
+  --dart-define-from-file=firebase-config.json
+
+# Atau build web statis mode prototipe UTS lalu sajikan folder build/web
 flutter build web --release
 ```
+
+> **Minggu 10 — sebelum menjalankan mode Firebase:** aktifkan
+> **Build → Firestore Database → Create database** (Standard, paket Spark) di
+> Firebase Console, lalu publish aturan dari `firestore.rules`. Tanpa langkah ini
+> aplikasi tetap terbuka, tetapi Beranda Firestore menampilkan banner peringatan
+> dan data belum tersimpan. Rincian ada di
+> [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md).
 
 Aplikasi memiliki **dua mode** yang dipilih otomatis di `lib/main.dart`: bila
 lima nilai `FIREBASE_*` diberikan, `Firebase.initializeApp()` dijalankan dan
@@ -175,8 +202,8 @@ UTS berbasis mock. Cara mengisi konfigurasi dijelaskan di
 ### Langkah 5 — Jalankan pengujian
 
 ```bash
-flutter analyze   # No issues found
-flutter test      # All tests passed! (+50)
+flutter analyze   # No issues found!
+flutter test      # All tests passed! (80 test)
 ```
 
 ### Akun Demo
@@ -207,7 +234,7 @@ Untuk menjalankan versi web UTS secara lokal, cukup `flutter run -d chrome` dari
 
 **Minggu 9 (sekarang):** sesi autentikasi tersimpan permanen oleh Firebase Authentication. Katalog, keranjang, dan pesanan UTS masih memakai mock repository di `lib/data/repositories/impl/` (data in-memory) dan hilang saat aplikasi dijalankan ulang.
 
-**Minggu 10 (rencana):** **Cloud Firestore** dengan koleksi `users`, `iphones`, `cases`, `carts`, dan `orders` (+ sub-koleksi `items`). Relasi, field, tipe data, contoh dokumen JSON, serta aturan keamanan dijelaskan di proposal dan `docs/firestore-schema.png`. Abstraksi repository sudah disiapkan sehingga implementasi Firestore dapat menggantikan mock tanpa mengubah UI.
+**Minggu 10 (terimplementasi):** **Cloud Firestore** dengan tiga collection untuk praktikum — `users/{uid}`, `cases/{id_case}`, `orders/{auto-ID}`. Field `nama_case` sengaja didenormalisasi ke `orders` karena Firestore tidak mendukung `JOIN`. Abstraksi `LayananData` memisahkan UI dari Firebase, sehingga `LayananFirestore` dipakai saat runtime dan `LayananMemori` dipakai pada widget test. Rancangan database UTS jangka panjang (`users`, `iphones`, `cases`, `carts`, `orders` + sub-koleksi `items`) tetap tersedia di proposal dan `docs/firestore-schema.png`. Aturan keamanan: `allow read, write: if request.auth != null;`.
 
 ## 11. Screenshot Aplikasi
 
@@ -244,9 +271,22 @@ Untuk menjalankan versi web UTS secara lokal, cukup `flutter run -d chrome` dari
 
 > Screenshot J diambil dari **Authentication → Users** pada project Firebase mahasiswa; berkasnya disimpan setelah praktikum dijalankan di Chrome.
 
+### K. Bukti Firestore Console — Minggu 10
+
+Berkas berikut diambil dari **Build → Firestore Database → Data** setelah praktikum Minggu 10 dijalankan di Chrome (lihat [bagian 14](#14-praktikum-minggu-10--cloud-firestore)):
+
+| Berkas | Isi |
+|---|---|
+| `screenshots/12-firestore-users.png` | Collection `users`, dokumen `{uid}` |
+| `screenshots/13-firestore-cases.png` | Collection `cases`, 4 dokumen auto-seed |
+| `screenshots/14-firestore-orders.png` | Collection `orders`, minimal 1 dokumen pesanan |
+| `screenshots/15-firestore-rules.png` | Tab Rules: `allow read, write: if request.auth != null;` |
+
+> Berkas-berkas di atas **belum tersedia** dan sengaja tidak dibuat-reka: screenshot hanya dapat diambil dari project Firebase milik mahasiswa. Setelah disimpan, tautan ini dapat disertakan dalam pengumpulan tugas.
+
 ## 12. Riwayat Pengembangan
 
-Riwayat commit disusun bertahap mengikuti proses pengerjaan, bukan satu commit besar: inisialisasi project → model & data → repository & state → widget & tema → autentikasi → katalog & compatibility → keranjang/checkout/pesanan → admin → pengujian → dokumentasi & proposal → build web → **(Minggu 9)** koneksi Firebase → halaman Masuk/Daftar → cek status login & tombol Keluar → laporan praktikum → perbaikan temuan uji.
+Riwayat commit disusun bertahap mengikuti proses pengerjaan, bukan satu commit besar: inisialisasi project → model & data → repository & state → widget & tema → autentikasi → katalog & compatibility → keranjang/checkout/pesanan → admin → pengujian → dokumentasi & proposal → build web → **(Minggu 9)** koneksi Firebase → halaman Masuk/Daftar → cek status login & tombol Keluar → laporan praktikum → perbaikan temuan uji → **(Minggu 10)** setup Firestore + rules + model 3 collection → halaman & rute Minggu 10 + widget test → panduan, laporan, dan tabel uji.
 
 ## 13. Praktikum Minggu 9 — Firebase Authentication
 
@@ -286,7 +326,85 @@ mode ada di `lib/main.dart`.
 - Bukti screenshot: `screenshots/11-firebase-users.png`
 
 Dependensi mengikuti modul: `firebase_core:5.1.0` dan `firebase_auth:7.0.1`.
-`flutter analyze` bersih dan `flutter test` lulus **50 test**.
+`flutter analyze` bersih dan `flutter test` lulus **50 test** pada tahap Minggu 9.
+
+## 14. Praktikum Minggu 10 — Cloud Firestore
+
+Batas pertemuan: target **Chrome**, paket **Spark** tanpa billing, operasi hanya
+**Create** dan **Read**. Update/Delete menyusul Minggu 11. Contoh RoomBook pada
+modul (`users`/`rooms`/`reservations`) disesuaikan ke domain **Case iPhone Caca**:
+
+| RoomBook (modul) | Case iPhone Caca | Doc ID | Isi |
+|---|---|---|---|
+| `users` | `users` | `uid` Firebase Auth | Profil + sapaan real-time |
+| `rooms` | `cases` | `id_case` (`c001` … `c016`) | Master case, auto-seed 4 dokumen via `WriteBatch` |
+| `reservations` | `orders` | auto-ID | Pesanan case, terfilter per `id_pengguna` |
+
+**Denormalisasi:** `nama_case` disalin ke `orders` (bersama `harga_satuan` dan
+`total_harga`) karena Firestore tidak punya `JOIN`; Pesanan Saya cukup satu kali
+baca. **Aturan bisnis:** kombinasi `id_pengguna + id_case + tanggal + jam` yang
+sama ditolak lewat `PesananBentrokException` sebelum `.set()`. Query memakai
+**satu** `.where()` saja, pengurutan dilakukan di Dart agar tidak perlu
+*composite index*.
+
+### Berkas utama
+
+| Berkas | Peran |
+|---|---|
+| `firestore.rules` | `allow read, write: if request.auth != null;` (publish di Console) |
+| `lib/data/data_simulasi.dart` | 3 model + `toMap/fromMap`, `bacaWaktu()`, 4 case awal |
+| `lib/services/layanan_data.dart` | Kontrak abstrak `LayananData` |
+| `lib/services/layanan_firestore.dart` | Satu-satunya tempat `FirebaseFirestore.instance` dipanggil |
+| `lib/services/layanan_memori.dart` | Implementasi in-memory untuk widget test |
+| `lib/services/firestore_status.dart` | Status inisialisasi → banner error di Beranda |
+| `lib/pages/minggu10/*.dart` | Beranda Firestore, Daftar Case, Form Pesanan, Pesanan Saya |
+| `lib/router/app_router.dart` | `/firestore`, `/firestore/case`, `/firestore/form`, `/firestore/pesanan` |
+| `test/minggu10_*_test.dart` | Unit test model/layanan + widget test empat halaman |
+
+### Tabel uji Firestore (7 kasus)
+
+Kasus berstatus ✅ dibuktikan oleh test otomatis berbasis `LayananMemori()`;
+kolom "Hasil nyata" dilengkapi setelah uji langsung di Chrome dan Firebase Console.
+
+| # | Kasus uji | Langkah | Hasil yang diharapkan | Hasil nyata |
+|---|---|---|---|---|
+| 1 | Tambah data valid | Kirim Form Pesanan dengan isian lengkap | Dokumen tampil di `orders` & Pesanan Saya | ✅ test / ⏳ Console |
+| 2 | Tolak pesanan bentrok | Ajukan case, tanggal, dan jam yang sama | SnackBar "sudah dipesan"; dokumen tidak bertambah | ✅ test / ⏳ Chrome |
+| 3 | Bertahan saat refresh | Tekan F5 / muat ulang Chrome | Sapaan nama, daftar case, & pesanan tetap tampil | ⏳ isi setelah uji |
+| 4 | Isolasi antar akun | Keluar lalu masuk dengan akun simulasi kedua | Pesanan akun pertama tidak muncul di akun kedua | ✅ test / ⏳ Chrome |
+| 5 | Security Rules | Uji akses tanpa login / saat aturan ditolak | Firebase mengembalikan `permission-denied` | ✅ UI error state / ⏳ Console |
+| 6 | Auto-seed cases | Login pertama saat `cases` masih kosong | 4 dokumen dibuat sekali, tidak duplikat saat login ulang | ✅ test / ⏳ Console |
+| 7 | Validasi & 3 keadaan Stream | Kosongkan jumlah; simulasikan error stream | Pesan validasi muncul; `waiting` / `error` / `empty` tampil benar | ✅ test |
+
+### Menjalankan dan memverifikasi
+
+```bash
+cd D:/dev/caseipcaca
+flutter analyze
+env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+  NO_PROXY=localhost,127.0.0.1 flutter test      # 80 test, All tests passed!
+MSYS_NO_PATHCONV=1 flutter build web --release \
+  --dart-define-from-file=firebase-config.json   # √ Built build/web
+flutter run -d chrome --dart-define-from-file=firebase-config.json
+```
+
+**Sebelum uji di Chrome:** aktifkan Firestore di Console
+(**Build → Firestore Database → Create database**, Standard / Spark,
+`asia-southeast2` Jakarta), lalu **Publish** isi `firestore.rules`. Akun yang
+dibuat sebelum Minggu 10 belum punya `users/{uid}` — cukup **Keluar lalu masuk
+kembali**. Bila database belum aktif, Beranda Firestore menampilkan banner
+peringatan alih-alih crash.
+
+### Dokumen praktikum
+
+- Panduan setup Console, pemetaan ERD, Security Rules, daftar periksa Latihan 1–4, dan troubleshooting: [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md)
+- Laporan (identitas, **7 kasus uji**, refleksi individu, temuan uji, dan bukti commit): [`docs/LAPORAN_MINGGU_10.md`](docs/LAPORAN_MINGGU_10.md)
+- Screenshot tiga collection: `screenshots/12-firestore-users.png`, `13-firestore-cases.png`, `14-firestore-orders.png`
+
+Dependensi mengikuti modul: `cloud_firestore:7.1.0`. `flutter analyze` bersih,
+`flutter test` lulus **80 test**, dan `flutter build web --release` berhasil.
+Modul meminta minimal 2 commit baru ter-push; Minggu 10 menyumbang 3 commit
+bertahap.
 
 ---
 
