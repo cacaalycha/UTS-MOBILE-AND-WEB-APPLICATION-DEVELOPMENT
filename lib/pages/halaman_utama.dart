@@ -10,7 +10,21 @@ import '../core/constants/colors.dart';
 /// sehingga `CekStatusLogin` langsung menampilkan `MasukPage` — tanpa
 /// pemanggilan navigasi manual.
 class HalamanUtama extends StatelessWidget {
-  const HalamanUtama({super.key});
+  const HalamanUtama({super.key, this.onKeluar});
+
+  /// Aksi logout dari `CekStatusLogin`, supaya cadangan status login ikut
+  /// dibersihkan. Bila halaman dipakai berdiri sendiri, fallback langsung ke
+  /// `FirebaseAuth.instance.signOut()` (sesuai modul).
+  final Future<void> Function()? onKeluar;
+
+  Future<void> _keluar() async {
+    final aksi = onKeluar;
+    if (aksi != null) {
+      await aksi();
+    } else {
+      await FirebaseAuth.instance.signOut();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +42,7 @@ class HalamanUtama extends StatelessWidget {
           IconButton(
             tooltip: 'Keluar',
             icon: const Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
+            onPressed: _keluar,
           ),
         ],
       ),
@@ -104,7 +118,7 @@ class HalamanUtama extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 OutlinedButton.icon(
-                  onPressed: () => FirebaseAuth.instance.signOut(),
+                  onPressed: _keluar,
                   icon: const Icon(Icons.logout),
                   label: const Text('Keluar'),
                 ),

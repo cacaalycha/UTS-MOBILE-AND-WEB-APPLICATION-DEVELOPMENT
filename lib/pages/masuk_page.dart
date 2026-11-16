@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/colors.dart';
+import '../core/utils/validators.dart' show Validators;
 import '../utils/validasi_auth.dart';
 
 /// Halaman Masuk **dan** Daftar — satu halaman, dua mode.
@@ -11,7 +12,16 @@ import '../utils/validasi_auth.dart';
 /// munculnya kolom "Ulangi password". Tidak ada [Navigator] di sini: perpindahan
 /// halaman ditangani `CekStatusLogin` lewat `authStateChanges()`.
 class MasukPage extends StatefulWidget {
-  const MasukPage({super.key});
+  const MasukPage({super.key, this.onBerhasil});
+
+  /// Dipanggil tepat setelah login/daftar sukses. `CekStatusLogin` memakainya
+  /// untuk segera menampilkan halaman utama, tanpa menunggu event stream yang
+  /// kadang terlambat di Chrome. Bukan navigasi manual, jadi tetap sesuai
+  /// ketentuan modul (perpindahan halaman dikendalikan CekStatusLogin).
+  ///
+  /// [namaLengkap] hanya terisi pada mode Daftar, lalu diteruskan ke
+  /// `users/{uid}` oleh praktikum Minggu 10.
+  final void Function(String? namaLengkap)? onBerhasil;
 
   @override
   State<MasukPage> createState() => _MasukPageState();
@@ -20,6 +30,7 @@ class MasukPage extends StatefulWidget {
 class _MasukPageState extends State<MasukPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _namaController = TextEditingController();
   final _passwordController = TextEditingController();
   final _ulangiController = TextEditingController();
 
@@ -29,9 +40,14 @@ class _MasukPageState extends State<MasukPage> {
   /// Menonaktifkan tombol + menampilkan indikator agar tidak terkirim dua kali.
   bool _sedangProses = false;
 
+  /// `true` setelah login/daftar sukses: tombol tetap mati walau halaman
+  /// belum sempat diganti, sehingga tidak bisa memicu kirim ulang.
+  bool _selesai = false;
+
   @override
   void dispose() {
     _emailController.dispose();
+    _namaController.dispose();
     _passwordController.dispose();
     _ulangiController.dispose();
     super.dispose();
@@ -55,19 +71,25 @@ class _MasukPageState extends State<MasukPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
+    var berhasil = false;
     try {
       if (_modeDaftar) {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        final kredensial = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
+        final nama = _namaController.text.trim();
+        if (nama.isNotEmpty) {
+          await kredensial.user?.updateDisplayName(nama);
+        }
       } else {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
       }
-      // Berhasil: stream authStateChanges() mengganti halaman otomatis.
+      berhasil = true;
     } on FirebaseAuthException catch (e) {
       pesan.showSnackBar(
         SnackBar(
@@ -75,19 +97,29 @@ class _MasukPageState extends State<MasukPage> {
           backgroundColor: AppColors.error,
         ),
       );
-      // Halaman bisa sudah dicopot CekStatusLogin saat proses selesai.
-      if (mounted) setState(() => _sedangProses = false);
     } catch (_) {
       pesan.showSnackBar(
         const SnackBar(
           content: Text('Terjadi kesalahan. Silakan coba lagi.'),
         ),
       );
-      if (mounted) setState(() => _sedangProses = false);
+    } finally {
+      if (berhasil) {
+        // PERBAIKAN: jangan hanya bergantung pada authStateChanges().
+        // Beri tahu gerbang bahwa pengguna kini sudah login supaya halaman
+        // utama tampil seketika; stream tetap dipakai untuk refresh/logout.
+        widget.onBerhasil
+            ?.call(_modeDaftar ? _namaController.text.trim() : null);
+      }
+      // Selalu lepas spinner. Kalau berhasil, `_selesai` menjaga tombol tetap
+      // mati agar tidak ada kirim ulang sebelum halaman diganti.
+      if (mounted) {
+        setState(() {
+          _sedangProses = false;
+          if (berhasil) _selesai = true;
+        });
+      }
     }
-    // Saat BERHASIL tombol sengaja dibiarkan nonaktif: stream
-    // authStateChanges() segera mengganti halaman, sehingga tombol tidak
-    // sempat menyala kembali dan tidak bisa memicu kirim ulang.
   }
 
   @override
@@ -127,6 +159,7 @@ class _MasukPageState extends State<MasukPage> {
                     ),
                     const SizedBox(height: 28),
                     TextFormField(
+                      key: const Key('field_email'),
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
@@ -139,7 +172,25 @@ class _MasukPageState extends State<MasukPage> {
                       validator: validasiEmail,
                     ),
                     const SizedBox(height: 16),
+                    // Latihan 2A Minggu 10: mode Daftar wajib punya kolom
+                    // Nama lengkap, yang ditulis ke users/{uid} saat login.
+                    if (_modeDaftar) ...[
+                      TextFormField(
+                        key: const Key('field_nama_lengkap'),
+                        controller: _namaController,
+                        textInputAction: TextInputAction.next,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama lengkap',
+                          hintText: 'Nama untuk sapaan di Beranda',
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: Validators.name,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
+                      key: const Key('field_password'),
                       controller: _passwordController,
                       // Karakter disembunyikan sesuai butir periksa modul.
                       obscureText: true,
@@ -157,6 +208,7 @@ class _MasukPageState extends State<MasukPage> {
                     if (_modeDaftar) ...[
                       const SizedBox(height: 16),
                       TextFormField(
+                        key: const Key('field_ulangi_password'),
                         controller: _ulangiController,
                         obscureText: true,
                         onFieldSubmitted: (_) => _kirim(),
@@ -175,7 +227,7 @@ class _MasukPageState extends State<MasukPage> {
                     SizedBox(
                       height: 48,
                       child: FilledButton(
-                        onPressed: _sedangProses ? null : _kirim,
+                        onPressed: (_sedangProses || _selesai) ? null : _kirim,
                         child: _sedangProses
                             ? const SizedBox(
                                 height: 20,
@@ -189,7 +241,7 @@ class _MasukPageState extends State<MasukPage> {
                     ),
                     const SizedBox(height: 4),
                     TextButton(
-                      onPressed: _sedangProses ? null : _gantiMode,
+                      onPressed: (_sedangProses || _selesai) ? null : _gantiMode,
                       child: Text(
                         _modeDaftar
                             ? 'Sudah punya akun? Masuk'

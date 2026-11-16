@@ -15,7 +15,14 @@ import '../../widgets/components/section_header.dart';
 
 /// Halaman Beranda (H2).
 class BerandaPage extends StatelessWidget {
-  const BerandaPage({super.key});
+  const BerandaPage({
+    super.key,
+    this.tampilkanPintasanFirestore = false,
+  });
+
+  /// Menampilkan kartu pintasan praktikum Minggu 10 hanya pada mode Firebase.
+  /// Default `false` supaya 26 test lama dan demo UTS tidak berubah.
+  final bool tampilkanPintasanFirestore;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +70,11 @@ class BerandaPage extends StatelessWidget {
                   // ==== Kartu pemilihan model iPhone ====
                   _DeviceCard(device: device),
                   const SizedBox(height: AppSpacing.md),
+
+                  if (tampilkanPintasanFirestore) ...[
+                    _PintasanFirestore(),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
 
                   SectionHeader(
                     title: 'Case populer',
@@ -176,6 +188,58 @@ class BerandaPage extends StatelessWidget {
         context.go('/login');
       }
     }
+  }
+}
+
+class _PintasanFirestore extends StatelessWidget {
+  const _PintasanFirestore();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primarySurface,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        onTap: () => context.push('/firestore'),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.cloud_done_outlined,
+                  color: AppColors.primaryDark, size: 28),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Praktikum Minggu 10 · Cloud Firestore',
+                      style: AppTypography.caption
+                          .copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'users · cases · orders — data real-time & bertahan setelah refresh.',
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -81,15 +81,40 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Minggu 10 menambah kolom "Nama lengkap", sehingga pencarian berdasar
+    // Key lebih stabil daripada indeks posisi TextFormField.
     await tester.enterText(
-      find.byType(TextFormField).at(0),
+      find.byKey(const Key('field_email')),
       'alysha@caca.test',
     );
-    await tester.enterText(find.byType(TextFormField).at(1), '123456');
-    await tester.enterText(find.byType(TextFormField).at(2), '654321');
+    await tester.enterText(
+      find.byKey(const Key('field_nama_lengkap')),
+      'Alysha Syafiya',
+    );
+    await tester.enterText(
+      find.byKey(const Key('field_password')),
+      '123456',
+    );
+    await tester.enterText(
+      find.byKey(const Key('field_ulangi_password')),
+      '654321',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Daftar'));
     await tester.pumpAndSettle();
 
     expect(find.text('Password tidak sama'), findsOneWidget);
+  });
+
+  testWidgets('Minggu 10 — mode Daftar punya kolom Nama lengkap',
+      (tester) async {
+    await tester.pumpWidget(_bungkus());
+
+    await tester.tap(
+      find.widgetWithText(TextButton, 'Belum punya akun? Daftar'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nama lengkap'), findsOneWidget);
+    expect(find.byKey(const Key('field_nama_lengkap')), findsOneWidget);
   });
 }

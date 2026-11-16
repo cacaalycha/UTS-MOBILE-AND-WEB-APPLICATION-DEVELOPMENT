@@ -10,11 +10,17 @@ import '../pages/cart/keranjang_page.dart';
 import '../pages/catalog/detail_case_page.dart';
 import '../pages/catalog/katalog_page.dart';
 import '../pages/home/beranda_page.dart';
+import '../pages/minggu10/beranda_firestore_page.dart';
+import '../pages/minggu10/daftar_case_page.dart';
+import '../pages/minggu10/form_pesanan_page.dart';
+import '../pages/minggu10/pesanan_saya_page.dart';
 import '../pages/model/pilih_model_page.dart';
 import '../pages/order/detail_pesanan_page.dart';
 import '../pages/order/konfirmasi_page.dart';
 import '../pages/order/pesanan_saya_page.dart';
 import '../providers/auth_provider.dart';
+import '../services/firestore_status.dart';
+import '../services/layanan_data.dart';
 import '../widgets/layouts/app_shell.dart';
 
 /// Membuat konfigurasi routing aplikasi.
@@ -24,12 +30,28 @@ import '../widgets/layouts/app_shell.dart';
 GoRouter createRouter(
   AuthProvider auth, {
   String initialLocation = '/login',
+  bool firebaseMode = false,
+  LayananData? layananMinggu10,
+  FirestoreStatus? statusMinggu10,
 }) {
   return GoRouter(
     initialLocation: initialLocation,
     refreshListenable: auth,
     redirect: (context, state) {
       final location = state.matchedLocation;
+
+      // Mode Minggu 9: status login sudah dijaga `CekStatusLogin` di luar
+      // router, jadi jangan pernah mengalihkan ke halaman login mock.
+      // Halaman auth dan area admin (role belum ada di Firebase) dibelokkan
+      // ke Beranda agar pengguna tetap berada di katalog pembeli.
+      if (firebaseMode) {
+        final isAuthPage = location == '/login' || location == '/register';
+        final isAdminArea =
+            location == '/admin' || location.startsWith('/admin/');
+        if (isAuthPage || isAdminArea) return '/beranda';
+        return null;
+      }
+
       final isAuthPage = location == '/login' || location == '/register';
 
       // Belum login → hanya boleh di halaman auth.
@@ -77,7 +99,9 @@ GoRouter createRouter(
             routes: [
               GoRoute(
                 path: '/beranda',
-                builder: (context, state) => const BerandaPage(),
+                builder: (context, state) => BerandaPage(
+                  tampilkanPintasanFirestore: firebaseMode,
+                ),
               ),
             ],
           ),
@@ -160,6 +184,32 @@ GoRouter createRouter(
         path: '/admin/produk/form',
         builder: (context, state) =>
             AdminProductFormPage(caseId: state.uri.queryParameters['id']),
+      ),
+
+      // ===== Praktikum Minggu 10 — Cloud Firestore (Create + Read) =====
+      // Rute di luar shell agar tidak mengubah jumlah branch navigasi UTS.
+      GoRoute(
+        path: '/firestore',
+        builder: (context, state) => BerandaFirestorePage(
+          layanan: layananMinggu10,
+          status: statusMinggu10,
+          namaCadangan: auth.user?.name ?? 'Pengguna',
+        ),
+      ),
+      GoRoute(
+        path: '/firestore/case',
+        builder: (context, state) =>
+            DaftarCasePage(layanan: layananMinggu10),
+      ),
+      GoRoute(
+        path: '/firestore/form',
+        builder: (context, state) =>
+            FormPesananPage(layanan: layananMinggu10),
+      ),
+      GoRoute(
+        path: '/firestore/pesanan',
+        builder: (context, state) =>
+            PesananSayaFirestorePage(layanan: layananMinggu10),
       ),
     ],
   );
