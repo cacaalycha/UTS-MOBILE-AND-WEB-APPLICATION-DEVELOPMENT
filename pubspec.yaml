@@ -16,14 +16,16 @@ dependencies:
   go_router: ^14.6.2
   google_fonts: ^6.2.1
   intl: ^0.19.0
-  # Praktikum Minggu 9 — Firebase Authentication (Email/Password, target Chrome).
-  # Versi mengikuti modul: firebase_core 5.1.0 + firebase_auth 7.0.1.
+  # Firebase — versi mengikuti modul Minggu 9 & Minggu 10.
+  # Minggu 9: firebase_core 5.1.0 + firebase_auth 7.0.1 (Email/Password).
+  # Minggu 10: cloud_firestore 7.1.0 (users, cases, orders).
   firebase_core: 5.1.0
   firebase_auth: 7.0.1
+  cloud_firestore: 7.1.0
 
-  # CATATAN: Firestore BELUM dipakai (baru Minggu 10). Katalog, keranjang,
-  # dan pesanan UTS masih memakai implementasi Mock*Repo; hanya autentikasi
-  # yang tersambung ke Firebase, lihat lib/firebase_login_app.dart.
+  # Mode prototipe UTS tanpa --dart-define tetap memakai implementasi Mock*Repo
+  # untuk katalog/keranjang/pesanan. Mode Firebase memakai FirebaseKatalogApp
+  # dengan LayananFirestore; lihat lib/main.dart dan lib/firebase_katalog_app.dart.
 
 dev_dependencies:
   flutter_test:

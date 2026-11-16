@@ -1,0 +1,21 @@
+// Praktikum Minggu 10 — Cloud Firestore (Case iPhone Caca)
+//
+// Salin seluruh isi file ini ke Firebase Console:
+//   Build > Firestore Database > tab Rules > Publish
+//
+// Aturan dasar sesuai modul: hanya pengguna yang SUDAH LOGIN yang boleh
+// membaca atau menulis. Jangan memakai `allow read, write: if true;`
+// (Test Mode) lebih dari beberapa menit.
+//
+// Catatan: isolasi data per pengguna (`orders` hanya milik uid sendiri)
+// dijamin di lapisan aplikasi lewat .where('id_pengguna', isEqualTo: uid).
+// Perketat lebih lanjut pada Minggu 11 saat pembahasan keamanan lanjutan.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
