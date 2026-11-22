@@ -388,12 +388,18 @@ MSYS_NO_PATHCONV=1 flutter build web --release \
 flutter run -d chrome --dart-define-from-file=firebase-config.json
 ```
 
-**Sebelum uji di Chrome:** aktifkan Firestore di Console
-(**Build → Firestore Database → Create database**, Standard / Spark,
-`asia-southeast2` Jakarta), lalu **Publish** isi `firestore.rules`. Akun yang
-dibuat sebelum Minggu 10 belum punya `users/{uid}` — cukup **Keluar lalu masuk
-kembali**. Bila database belum aktif, Beranda Firestore menampilkan banner
-peringatan alih-alih crash.
+**Setup Console (sudah selesai 22 November 2026):** Firestore aktif pada paket
+Spark dengan database `(default)` dan aturan `request.auth != null` terpublikasi.
+Untuk project baru, caranya **Databases & Storage → Firestore Database → Create
+database** (Standard / Spark, `asia-southeast2` Jakarta) lalu **Publish** isi
+`firestore.rules`; lihat [`docs/langkah-aktifkan-firestore.png`](docs/langkah-aktifkan-firestore.png).
+Akun yang dibuat sebelum Minggu 10 belum punya `users/{uid}` — cukup **Keluar
+lalu masuk kembali**. Bila database belum aktif, Beranda Firestore menampilkan
+banner peringatan alih-alih crash.
+
+**Verifikasi Rules otomatis:** baca tanpa login → `403 Missing or insufficient
+permissions`; baca memakai akun uji yang login → `200 OK` (akun uji langsung
+dihapus setelah pengecekan).
 
 ### Dokumen praktikum
 

@@ -12,11 +12,12 @@
 | Target | Chrome |
 | Dependensi | `firebase_core 5.1.0`, `firebase_auth 7.0.1`, `cloud_firestore 7.1.0` |
 
-> **Status pengisian:** ✅ = sudah diverifikasi otomatis di repositori
-> (`flutter analyze`, `flutter test`, `flutter build web`) ·
-> ⏳ = wajib dibuktikan sendiri setelah **Cloud Firestore diaktifkan di Console**
-> dan aplikasi dijalankan di Chrome. Bagian ⏳ tidak dapat diisi otomatis karena
-> memerlukan akun Google pemilik project dan data nyata di database.
+> **Status pengisian (per 22 November 2026):** ✅ = sudah diverifikasi otomatis
+> (`flutter analyze`, `flutter test`, `flutter build web`, dan probe REST
+> Firestore) · ⏳ = perlu dibuktikan sendiri di Chrome. **Cloud Firestore sudah
+> aktif dan Security Rules sudah dipublikasikan**; yang tersisa tinggal uji
+> langsung di browser dan screenshot Console yang hanya bisa diambil dari akun
+> Google pemilik project.
 
 ---
 
@@ -55,8 +56,8 @@ Padanan contoh RoomBook pada modul: `users → users`, `rooms → cases`,
 
 | Butir | Status | Bukti |
 |---|---|---|
-| Cloud Firestore aktif di Console (Spark) | ⏳ | **Build → Firestore Database → Create database** |
-| Security Rules `request.auth != null` terpublikasi | ✅ / ⏳ | Aturan lengkap ada di `firestore.rules`; ⏳ tinggal **Publish** di Console |
+| Cloud Firestore aktif di Console (Spark) | ✅ | Database `(default)` aktif; probe REST tidak lagi `SERVICE_DISABLED` |
+| Security Rules `request.auth != null` terpublikasi | ✅ | Diverifikasi 22 Nov 2026: tanpa login `403`, dengan login `200 OK`. Aturan ada di `firestore.rules` |
 | `cloud_firestore:7.1.0` terpasang | ✅ | `pubspec.yaml` + `pubspec.lock` |
 | 3 collection terhubung dari aplikasi Flutter | ✅ | `lib/services/layanan_firestore.dart` |
 | Form Pesanan menyimpan data baru | ✅ / ⏳ | Kode + test otomatis; ⏳ bukti Console |
@@ -83,7 +84,7 @@ membutuhkan koneksi Firebase.
 | 2 | Tolak pesanan bentrok | Ajukan **case + tanggal + jam** yang sama untuk pengguna yang sama | SnackBar *"… sudah dipesan pada tanggal … jam …"*; jumlah dokumen tidak bertambah | ✅ Sesuai (unit + widget test) / ⏳ Chrome |
 | 3 | Bertahan saat refresh | Tekan **F5** di Chrome setelah menambah pesanan | Sapaan nama, daftar case, dan pesanan tetap tampil (data dari server, bukan memori) | ⏳ isi setelah uji di Chrome |
 | 4 | Isolasi antar akun | Keluar, lalu masuk dengan akun simulasi kedua | Pesanan akun pertama **tidak muncul** di Pesanan Saya akun kedua | ✅ Sesuai (`gantiPengguna` pada test) / ⏳ Chrome |
-| 5 | Security Rules | Uji akses tanpa login / saat aturan ditolak | Firebase mengembalikan `permission-denied`, UI menampilkan pesan error ramah | ✅ UI error state (widget test) / ⏳ Console |
+| 5 | Security Rules | Uji akses tanpa login / saat aturan ditolak | Firebase mengembalikan `permission-denied`, UI menampilkan pesan error ramah | ✅ **Diverifikasi 22 Nov 2026**: tanpa login → `403 Missing or insufficient permissions`; dengan akun uji login → `200 OK`. Akun uji dihapus setelah cek |
 | 6 | Auto-seed cases | Login pertama saat `cases` masih kosong | 4 dokumen dibuat sekali via `WriteBatch`; login ulang tidak menduplikasi | ✅ Sesuai (unit test) / ⏳ Console |
 | 7 | Validasi form & tiga keadaan Stream | Kosongkan jumlah; lalu simulasikan error stream | Pesan validasi muncul, tidak ada dokumen baru; UI menampilkan `waiting` / `error` / `empty` dengan benar | ✅ Sesuai (widget test) |
 
@@ -98,8 +99,8 @@ membutuhkan koneksi Firebase.
 
 | Latihan | Butir | Status |
 |---|---|---|
-| 1 | Cloud Firestore aktif pada paket Spark | ⏳ |
-| 1 | Security Rules `request.auth != null` dipublikasikan | ⏳ |
+| 1 | Cloud Firestore aktif pada paket Spark | ✅ |
+| 1 | Security Rules `request.auth != null` dipublikasikan | ✅ |
 | 1 | `cloud_firestore:7.1.0` di `pubspec.yaml` | ✅ |
 | 1 | Model `PenggunaFirestore`, `CaseKatalog`, `PesananFirestore` + `toMap/fromMap` | ✅ |
 | 2 | Mode Daftar punya kolom **Nama lengkap** | ✅ |
@@ -161,11 +162,15 @@ Semua pesan commit ditulis dalam bahasa Indonesia mengikuti riwayat Minggu 9.
 
 ### Temuan uji dan perbaikan selama pengerjaan
 
-- **Firestore API belum aktif.** Probe REST ke project `case-iphone-caca`
-  mengembalikan `403 ... Cloud Firestore API has not been used ... or is
-  disabled`. Tidak bisa diperbaiki dari kode: harus **Create database** di
-  Console. Solusi sementara: `FirestoreStatus` menangkap kegagalan inisialisasi
-  dan menampilkan **banner peringatan** di Beranda Firestore, bukan crash.
+- **Firestore API sempat belum aktif → SELESAI 22 November 2026.** Probe REST
+  awal mengembalikan `403 SERVICE_DISABLED — Cloud Firestore API has not been
+  used ... or is disabled`. Tidak bisa diperbaiki dari kode: harus **Create
+  database** di Console. Sambil menunggu, `FirestoreStatus` menangkap kegagalan
+  inisialisasi dan menampilkan **banner peringatan** di Beranda Firestore,
+  bukan crash. Setelah database dibuat dan aturan dipublish, probe berubah
+  menjadi `403 Missing or insufficient permissions` untuk akses tanpa login —
+  persis perilaku `request.auth != null`. Uji dengan akun sementara
+  menghasilkan `200 OK`; akun tersebut langsung dihapus agar data tetap bersih.
 - **Composite index.** Menggabungkan `.where()` dan `.orderBy()` pada field
   berbeda memicu `failed-precondition`. Solusi sesuai modul: hanya satu
   `.where()` di Firestore, pengurutan `.sort()` di Dart.

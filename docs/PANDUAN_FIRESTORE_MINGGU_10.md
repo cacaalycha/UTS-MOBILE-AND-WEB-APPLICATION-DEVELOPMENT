@@ -42,16 +42,17 @@ diisikan sekali lewat `WriteBatch` bila `cases` masih kosong.
 
 ## 2. Langkah di Firebase Console (WAJIB, sekali saja)
 
-> Saat pengerjaan kode, database Firestore project `case-iphone-caca` **belum
-> aktif**. Probe REST terakhir masih mengembalikan:
-> `403 SERVICE_DISABLED — "Cloud Firestore API has not been used in project
-> case-iphone-caca before or it is disabled"`. Aplikasi sudah menangani kondisi
-> ini dengan banner peringatan, tetapi data baru akan benar-benar tersimpan
-> setelah langkah berikut dilakukan.
+> **STATUS (22 November 2026): SUDAH AKTIF.** Database `(default)` berhasil
+> dibuat dan aturan `request.auth != null` sudah dipublikasikan. Verifikasi
+> otomatis: baca **tanpa login** → `403 Missing or insufficient permissions`;
+> baca **dengan akun uji yang login** → `200 OK`. Akun uji langsung dihapus
+> setelah pengecekan sehingga project tetap bersih.
 >
-> Jalur pintas bila menu **Firestore Database** tidak langsung mengaktifkan API:
-> https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=case-iphone-caca
-> → klik **Enable**, tunggu beberapa menit, lalu kembali ke langkah 2.
+> Langkah di bawah tetap disimpan sebagai catatan bila project perlu disetel
+> ulang. Bila suatu saat muncul lagi
+> `403 SERVICE_DISABLED — Cloud Firestore API has not been used ...`, aktifkan
+> lewat https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=case-iphone-caca
+> → **Enable**, tunggu beberapa menit, lalu ulangi langkah 2.
 
 1. Buka https://console.firebase.google.com → pilih project **case-iphone-caca**.
 2. Menu kiri: **Databases & Storage → Firestore Database**.
