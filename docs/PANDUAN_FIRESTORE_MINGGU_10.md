@@ -54,7 +54,11 @@ diisikan sekali lewat `WriteBatch` bila `cases` masih kosong.
 > → klik **Enable**, tunggu beberapa menit, lalu kembali ke langkah 2.
 
 1. Buka https://console.firebase.google.com → pilih project **case-iphone-caca**.
-2. Menu kiri: **Build → Firestore Database**.
+2. Menu kiri: **Databases & Storage → Firestore Database**.
+   Pada tampilan Console terbaru, kategori **Build** pada modul sudah berganti nama menjadi
+   **Databases & Storage** (klik untuk membuka submenu). Lihat
+   [`docs/langkah-aktifkan-firestore.png`](langkah-aktifkan-firestore.png)
+   untuk posisi tombolnya pada tampilan Console saat ini.
 3. Klik **Create database**.
 4. Biarkan edisi **Standard** (gratis pada paket Spark), jangan pilih yang
    meminta billing.
