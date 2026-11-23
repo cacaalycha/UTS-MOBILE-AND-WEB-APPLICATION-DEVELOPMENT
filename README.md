@@ -333,6 +333,8 @@ Berkas berikut diambil dari **Build → Firestore Database → Data** setelah pr
 
 Riwayat commit disusun bertahap mengikuti proses pengerjaan, bukan satu commit besar: inisialisasi project → model & data → repository & state → widget & tema → autentikasi → katalog & compatibility → keranjang/checkout/pesanan → admin → pengujian → dokumentasi & proposal → build web → **(Minggu 9)** koneksi Firebase → halaman Masuk/Daftar → cek status login & tombol Keluar → laporan praktikum → perbaikan temuan uji → **(Minggu 10)** setup Firestore + rules + model 3 collection → halaman & rute Minggu 10 + widget test → panduan, laporan, dan tabel uji → dukungan peran admin di mode Firebase → **(Minggu 11)** rules kepemilikan + aturan bisnis → metode ubah/hapus di layer layanan → form mode ubah, menu aksi, dan dialog konfirmasi → panduan, laporan, dan tabel uji CRUD.
 
+Ringkasan lengkap tahapan, daftar perbaikan beserta nomor commitnya, hasil verifikasi, dan tugas yang masih tersisa ada di [`docs/RINGKASAN_PERKEMBANGAN.md`](docs/RINGKASAN_PERKEMBANGAN.md).
+
 ## 13. Praktikum Minggu 9 — Firebase Authentication
 
 Pertemuan pertama setelah UTS: aplikasi mulai terhubung ke layanan cloud.
