@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../data/data_simulasi.dart';
 import '../pages/admin/admin_dashboard_page.dart';
 import '../pages/admin/admin_product_form_page.dart';
 import '../pages/admin/admin_products_page.dart';
@@ -227,8 +228,14 @@ GoRouter createRouter(
       ),
       GoRoute(
         path: '/firestore/form',
-        builder: (context, state) =>
-            FormPesananPage(layanan: layananMinggu10),
+        builder: (context, state) => FormPesananPage(
+          layanan: layananMinggu10,
+          // Dikirim PesananSayaFirestorePage lewat context.push(extra: ...)
+          // saat menu Ubah dipilih. Null = mode tambah.
+          pesananAwal: state.extra is PesananFirestore
+              ? state.extra as PesananFirestore
+              : null,
+        ),
       ),
       GoRoute(
         path: '/firestore/pesanan',

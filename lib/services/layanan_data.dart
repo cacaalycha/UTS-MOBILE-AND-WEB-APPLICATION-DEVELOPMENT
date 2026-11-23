@@ -37,6 +37,26 @@ abstract class LayananData {
     String catatan = '',
   });
 
+  /// Mengubah pesanan milik sendiri yang masih berstatus Menunggu.
+  ///
+  /// Melempar [OperasiDitolakException] bila bukan pemilik / status terkunci,
+  /// dan [PesananBentrokException] bila jadwal baru bentrok dengan pesanan
+  /// lain. Dokumen yang sedang diubah tidak ikut dihitung bentrok.
+  /// `dibuat_pada` dan `id_pengguna` tidak berubah; `diubah_pada` diisi.
+  Future<PesananFirestore> ubahPesanan({
+    required String idPesanan,
+    required CaseKatalog caseItem,
+    required String namaModelIphone,
+    required int jumlah,
+    required String tanggal,
+    required String jam,
+    String catatan = '',
+  });
+
+  /// Menghapus pesanan milik sendiri yang masih berstatus Menunggu.
+  /// UI wajib meminta konfirmasi sebelum memanggil metode ini.
+  Future<void> hapusPesanan(String idPesanan);
+
   /// Pesanan milik pengguna yang sedang login, real-time dan terisolasi.
   /// Query hanya memakai SATU `.where()`; urutan terbaru di-sort di Dart
   /// agar tidak memicu error *composite index* (lihat modul bagian 6).

@@ -142,18 +142,18 @@ class LayananMemori implements LayananData {
     required String jam,
     String catatan = '',
   }) async {
-    final bentrok = _pesanan.any(
-      (item) =>
-          item.idPengguna == _uid &&
-          item.idCase == caseItem.idCase &&
-          item.tanggal == tanggal &&
-          item.jam == jam &&
-          item.status.toLowerCase() != statusDibatalkan.toLowerCase(),
-    );
-    if (bentrok) {
+    if (adaBentrokPesanan(
+      daftar: _pesanan.where((item) => item.idPengguna == _uid),
+      idCase: caseItem.idCase,
+      tanggal: tanggal,
+      jam: jam,
+    )) {
       throw PesananBentrokException(
-        '${caseItem.namaCase} sudah dipesan pada tanggal $tanggal jam $jam. '
-        'Pilih jam pengambilan lain.',
+        pesanBentrok(
+          namaCase: caseItem.namaCase,
+          tanggal: tanggal,
+          jam: jam,
+        ),
       );
     }
 
@@ -175,6 +175,78 @@ class LayananMemori implements LayananData {
     _pesanan.add(pesanan);
     _kirimPesanan();
     return pesanan;
+  }
+
+  @override
+  Future<PesananFirestore> ubahPesanan({
+    required String idPesanan,
+    required CaseKatalog caseItem,
+    required String namaModelIphone,
+    required int jumlah,
+    required String tanggal,
+    required String jam,
+    String catatan = '',
+  }) async {
+    final index = _pesanan.indexWhere((item) => item.idPesanan == idPesanan);
+    if (index == -1) {
+      throw const OperasiDitolakException('Pesanan tidak ditemukan.');
+    }
+
+    final lama = _pesanan[index];
+    pastikanBolehDiubah(data: lama.toMap(), uidAktif: _uid, aksi: 'ubah');
+
+    if (adaBentrokPesanan(
+      daftar: _pesanan.where((item) => item.idPengguna == _uid),
+      idCase: caseItem.idCase,
+      tanggal: tanggal,
+      jam: jam,
+      abaikanId: idPesanan,
+    )) {
+      throw PesananBentrokException(
+        pesanBentrok(
+          namaCase: caseItem.namaCase,
+          tanggal: tanggal,
+          jam: jam,
+        ),
+      );
+    }
+
+    final hasil = PesananFirestore(
+      idPesanan: lama.idPesanan,
+      idPengguna: lama.idPengguna,
+      idCase: caseItem.idCase,
+      namaCase: caseItem.namaCase,
+      namaModelIphone: namaModelIphone,
+      jumlah: jumlah,
+      hargaSatuan: caseItem.harga,
+      totalHarga: caseItem.harga * jumlah,
+      tanggal: tanggal,
+      jam: jam,
+      status: lama.status,
+      catatan: catatan,
+      dibuatPada: lama.dibuatPada,
+      diubahPada: DateTime.now(),
+    );
+    _pesanan[index] = hasil;
+    _kirimPesanan();
+    return hasil;
+  }
+
+  @override
+  Future<void> hapusPesanan(String idPesanan) async {
+    final index = _pesanan.indexWhere((item) => item.idPesanan == idPesanan);
+    if (index == -1) {
+      throw const OperasiDitolakException('Pesanan tidak ditemukan.');
+    }
+
+    pastikanBolehDiubah(
+      data: _pesanan[index].toMap(),
+      uidAktif: _uid,
+      aksi: 'hapus',
+    );
+
+    _pesanan.removeAt(index);
+    _kirimPesanan();
   }
 
   /// Hanya untuk keperluan test: menyuntik data awal tanpa menunggu seed.

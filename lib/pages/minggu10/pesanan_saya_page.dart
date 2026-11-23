@@ -81,8 +81,10 @@ class PesananSayaFirestorePage extends StatelessWidget {
                   itemCount: daftar.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(height: AppSpacing.xs),
-                  itemBuilder: (context, index) =>
-                      _KartuPesanan(pesanan: daftar[index]),
+                  itemBuilder: (context, index) => _KartuPesanan(
+                        pesanan: daftar[index],
+                        layanan: service,
+                      ),
                 );
               },
             ),
@@ -94,9 +96,70 @@ class PesananSayaFirestorePage extends StatelessWidget {
 }
 
 class _KartuPesanan extends StatelessWidget {
-  const _KartuPesanan({required this.pesanan});
+  const _KartuPesanan({
+    required this.pesanan,
+    required this.layanan,
+  });
 
   final PesananFirestore pesanan;
+  final LayananData layanan;
+
+  /// Mode ubah memakai form yang sama dengan mode tambah (Minggu 11).
+  void _bukaUbah(BuildContext context) {
+    context.push('/firestore/form', extra: pesanan);
+  }
+
+  /// Hapus selalu lewat dialog konfirmasi. Batal/null = tidak ada perubahan.
+  Future<void> _konfirmasiHapus(BuildContext context) async {
+    final yakin = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus pesanan?'),
+        content: Text(
+          '${pesanan.namaCase} pada ${pesanan.tanggal} jam ${pesanan.jam} '
+          'akan dihapus permanen dari collection orders.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            key: const Key('tombol_konfirmasi_hapus'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (yakin != true || !context.mounted) return;
+
+    final pesan = ScaffoldMessenger.of(context);
+    try {
+      await layanan.hapusPesanan(pesanan.idPesanan);
+      if (!context.mounted) return;
+      pesan.showSnackBar(
+        const SnackBar(content: Text('Pesanan berhasil dihapus.')),
+      );
+    } on OperasiDitolakException catch (e) {
+      if (!context.mounted) return;
+      pesan.showSnackBar(
+        SnackBar(
+          content: Text(e.pesan),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      pesan.showSnackBar(
+        SnackBar(
+          content: const Text('Gagal menghapus. Periksa Rules dan koneksi.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +183,25 @@ class _KartuPesanan extends StatelessWidget {
                 ),
               ),
               _StatusChip(status: pesanan.status),
+              PopupMenuButton<String>(
+                key: const Key('menu_aksi_pesanan'),
+                tooltip: 'Aksi pesanan',
+                onSelected: (nilai) => nilai == 'ubah'
+                    ? _bukaUbah(context)
+                    : _konfirmasiHapus(context),
+                itemBuilder: (context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    value: 'ubah',
+                    enabled: pesanan.bisaDiubah,
+                    child: const Text('Ubah'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'hapus',
+                    enabled: pesanan.bisaDiubah,
+                    child: const Text('Hapus'),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 4),

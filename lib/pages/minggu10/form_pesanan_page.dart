@@ -16,10 +16,18 @@ import '../../services/layanan_data.dart';
 /// dinonaktifkan saat menyimpan, dan jadwal bentrok ditolak lewat SnackBar
 /// tanpa menutup form. Validasi lokal memakai pola `Form` + `GlobalKey`.
 class FormPesananPage extends StatefulWidget {
-  const FormPesananPage({super.key, this.layanan});
+  const FormPesananPage({
+    super.key,
+    this.layanan,
+    this.pesananAwal,
+  });
 
   /// Injeksi `LayananMemori()` untuk widget test.
   final LayananData? layanan;
+
+  /// Null = mode tambah (Minggu 10). Diisi = mode ubah (Minggu 11):
+  /// isian form terisi data lama dan tombol menjadi "Simpan Perubahan".
+  final PesananFirestore? pesananAwal;
 
   @override
   State<FormPesananPage> createState() => _FormPesananPageState();
@@ -44,6 +52,16 @@ class _FormPesananPageState extends State<FormPesananPage> {
       sekarang.month,
       sekarang.day,
     );
+
+    final awal = widget.pesananAwal;
+    if (awal != null) {
+      _idCaseTerpilih = awal.idCase;
+      _namaModelTerpilih = awal.namaModelIphone;
+      _jamTerpilih = awal.jam;
+      _jumlah = awal.jumlah.toString();
+      _catatanController.text = awal.catatan;
+      _tanggalTerpilih = DateTime.tryParse(awal.tanggal) ?? _tanggalTerpilih;
+    }
   }
 
   @override
@@ -51,6 +69,8 @@ class _FormPesananPageState extends State<FormPesananPage> {
     _catatanController.dispose();
     super.dispose();
   }
+
+  bool get _modeUbah => widget.pesananAwal != null;
 
   String get _tanggal => formatTanggal(_tanggalTerpilih);
 
@@ -95,18 +115,34 @@ class _FormPesananPageState extends State<FormPesananPage> {
 
     final service = widget.layanan ?? context.read<LayananData>();
     try {
-      await service.tambahPesanan(
-        caseItem: caseItem,
-        namaModelIphone: _namaModelTerpilih,
-        jumlah: int.parse(_jumlah),
-        tanggal: _tanggal,
-        jam: _jamTerpilih,
-        catatan: _catatanController.text.trim(),
-      );
+      if (_modeUbah) {
+        await service.ubahPesanan(
+          idPesanan: widget.pesananAwal!.idPesanan,
+          caseItem: caseItem,
+          namaModelIphone: _namaModelTerpilih,
+          jumlah: int.parse(_jumlah),
+          tanggal: _tanggal,
+          jam: _jamTerpilih,
+          catatan: _catatanController.text.trim(),
+        );
+      } else {
+        await service.tambahPesanan(
+          caseItem: caseItem,
+          namaModelIphone: _namaModelTerpilih,
+          jumlah: int.parse(_jumlah),
+          tanggal: _tanggal,
+          jam: _jamTerpilih,
+          catatan: _catatanController.text.trim(),
+        );
+      }
       if (!mounted) return;
       pesan.showSnackBar(
-        const SnackBar(
-          content: Text('Pesanan berhasil disimpan ke collection orders.'),
+        SnackBar(
+          content: Text(
+            _modeUbah
+                ? 'Perubahan pesanan berhasil disimpan.'
+                : 'Pesanan berhasil disimpan ke collection orders.',
+          ),
         ),
       );
       context.go('/firestore/pesanan');
@@ -118,10 +154,22 @@ class _FormPesananPageState extends State<FormPesananPage> {
           backgroundColor: AppColors.error,
         ),
       );
+    } on OperasiDitolakException catch (e) {
+      pesan.showSnackBar(
+        SnackBar(
+          content: Text(e.pesan),
+          backgroundColor: AppColors.error,
+        ),
+      );
     } catch (e) {
       pesan.showSnackBar(
-        const SnackBar(
-          content: Text('Gagal menyimpan pesanan. Periksa Rules dan koneksi.'),
+        SnackBar(
+          content: Text(
+            _modeUbah
+                ? 'Gagal mengubah pesanan. Periksa Rules dan koneksi.'
+                : 'Gagal menyimpan pesanan. Periksa Rules dan koneksi.',
+          ),
+          backgroundColor: AppColors.error,
         ),
       );
     } finally {
@@ -138,7 +186,11 @@ class _FormPesananPageState extends State<FormPesananPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Form Pesanan · collection orders'),
+        title: Text(
+          _modeUbah
+              ? 'Ubah Pesanan · collection orders'
+              : 'Form Pesanan · collection orders',
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/firestore'),
@@ -196,13 +248,18 @@ class _FormPesananPageState extends State<FormPesananPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Isi data pemesanan',
+                          _modeUbah
+                              ? 'Ubah data pemesanan'
+                              : 'Isi data pemesanan',
                           style:
                               AppTypography.subtitle.copyWith(fontSize: 22),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Pilihan case dibaca real-time dari collection cases.',
+                          _modeUbah
+                              ? 'Isian terisi data lama. Field audit dibuat_pada '
+                                  'dan id_pengguna tidak berubah.'
+                              : 'Pilihan case dibaca real-time dari collection cases.',
                           style: AppTypography.caption.copyWith(
                             fontSize: 13,
                             color: AppColors.textSecondary,
@@ -346,7 +403,11 @@ class _FormPesananPageState extends State<FormPesananPage> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text('Kirim Pesanan'),
+                                : Text(
+                                    _modeUbah
+                                        ? 'Simpan Perubahan'
+                                        : 'Kirim Pesanan',
+                                  ),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),

@@ -98,6 +98,40 @@ class LayananFirestore implements LayananData {
           ..sort((a, b) => a.namaCase.compareTo(b.namaCase)),
       );
 
+  /// ATURAN BENTROK BERSAMA (dipakai tambah DAN ubah).
+  ///
+  /// Satu `.where('tanggal')` saja di Firestore, sisanya lewat fungsi bersama
+  /// `adaBentrokPesanan()` di lapisan model. Ini menghindari *composite index*
+  /// sekaligus menjaga pesan galat tetap sama di dua mode form.
+  Future<void> _pastikanTidakBentrok({
+    required String idCase,
+    required String namaCase,
+    required String tanggal,
+    required String jam,
+    String? abaikanId,
+  }) async {
+    final adaDiTanggal = await _db
+        .collection('orders')
+        .where('tanggal', isEqualTo: tanggal)
+        .get();
+
+    final bentrok = adaBentrokPesanan(
+      daftar: adaDiTanggal.docs.map(
+        (doc) => PesananFirestore.fromMap(doc.data(), docId: doc.id),
+      ),
+      idCase: idCase,
+      tanggal: tanggal,
+      jam: jam,
+      abaikanId: abaikanId,
+    );
+
+    if (bentrok) {
+      throw PesananBentrokException(
+        pesanBentrok(namaCase: namaCase, tanggal: tanggal, jam: jam),
+      );
+    }
+  }
+
   @override
   Future<PesananFirestore> tambahPesanan({
     required CaseKatalog caseItem,
@@ -112,30 +146,13 @@ class LayananFirestore implements LayananData {
       throw StateError('Pengguna belum login. Tidak dapat menyimpan pesanan.');
     }
 
-    // ATURAN BISNIS (dijalankan SEBELUM .set()):
-    // Cukup satu .where() di Firestore, sisanya dicek di Dart supaya tidak
-    // memerlukan composite index. Bentrok = case + tanggal + jam sama pada
-    // pesanan yang masih aktif (status bukan "Dibatalkan").
-    final adaDiTanggal = await _db
-        .collection('orders')
-        .where('tanggal', isEqualTo: tanggal)
-        .get();
-
-    final bentrok = adaDiTanggal.docs.any((doc) {
-      final data = doc.data();
-      return data['id_pengguna'] == uid &&
-          data['id_case'] == caseItem.idCase &&
-          data['jam'] == jam &&
-          (data['status'] as String? ?? statusMenunggu).toLowerCase() !=
-              statusDibatalkan.toLowerCase();
-    });
-
-    if (bentrok) {
-      throw PesananBentrokException(
-        '${caseItem.namaCase} sudah dipesan pada tanggal $tanggal jam $jam. '
-        'Pilih jam pengambilan lain.',
-      );
-    }
+    // ATURAN BISNIS (dijalankan SEBELUM .set()).
+    await _pastikanTidakBentrok(
+      idCase: caseItem.idCase,
+      namaCase: caseItem.namaCase,
+      tanggal: tanggal,
+      jam: jam,
+    );
 
     final docRef = _db.collection('orders').doc();
     final total = caseItem.harga * jumlah;
@@ -172,6 +189,100 @@ class LayananFirestore implements LayananData {
       catatan: catatan,
       dibuatPada: DateTime.now(),
     );
+  }
+
+  @override
+  Future<PesananFirestore> ubahPesanan({
+    required String idPesanan,
+    required CaseKatalog caseItem,
+    required String namaModelIphone,
+    required int jumlah,
+    required String tanggal,
+    required String jam,
+    String catatan = '',
+  }) async {
+    final uid = _uid;
+    if (uid == null) {
+      throw StateError('Pengguna belum login. Tidak dapat mengubah pesanan.');
+    }
+
+    final docRef = _db.collection('orders').doc(idPesanan);
+    final snap = await docRef.get();
+    if (!snap.exists) {
+      throw const OperasiDitolakException('Pesanan tidak ditemukan.');
+    }
+
+    // Aturan bisnis: pemilik + status Menunggu (sama seperti Rules).
+    pastikanBolehDiubah(
+      data: snap.data()!,
+      uidAktif: uid,
+      aksi: 'ubah',
+    );
+
+    // Kecualikan dokumen sendiri agar mengubah jumlah pada jam yang sama
+    // tidak dianggap bentrok (jebakan pada modul).
+    await _pastikanTidakBentrok(
+      idCase: caseItem.idCase,
+      namaCase: caseItem.namaCase,
+      tanggal: tanggal,
+      jam: jam,
+      abaikanId: idPesanan,
+    );
+
+    final lama = PesananFirestore.fromMap(snap.data()!, docId: snap.id);
+    final sekarang = FieldValue.serverTimestamp();
+    await docRef.update(<String, dynamic>{
+      'id_case': caseItem.idCase,
+      'nama_case': caseItem.namaCase,
+      'nama_model_iphone': namaModelIphone,
+      'jumlah': jumlah,
+      'harga_satuan': caseItem.harga,
+      'total_harga': caseItem.harga * jumlah,
+      'tanggal': tanggal,
+      'jam': jam,
+      'catatan': catatan,
+      // id_pengguna, dibuat_pada, dan status SENGAJA tidak disentuh.
+      'diubah_pada': sekarang,
+    });
+
+    return PesananFirestore(
+      idPesanan: idPesanan,
+      idPengguna: lama.idPengguna,
+      idCase: caseItem.idCase,
+      namaCase: caseItem.namaCase,
+      namaModelIphone: namaModelIphone,
+      jumlah: jumlah,
+      hargaSatuan: caseItem.harga,
+      totalHarga: caseItem.harga * jumlah,
+      tanggal: tanggal,
+      jam: jam,
+      status: lama.status,
+      catatan: catatan,
+      dibuatPada: lama.dibuatPada,
+      diubahPada: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<void> hapusPesanan(String idPesanan) async {
+    final uid = _uid;
+    if (uid == null) {
+      throw StateError('Pengguna belum login. Tidak dapat menghapus pesanan.');
+    }
+
+    final docRef = _db.collection('orders').doc(idPesanan);
+    final snap = await docRef.get();
+    if (!snap.exists) {
+      throw const OperasiDitolakException('Pesanan tidak ditemukan.');
+    }
+
+    pastikanBolehDiubah(
+      data: snap.data()!,
+      uidAktif: uid,
+      aksi: 'hapus',
+    );
+
+    await docRef.delete();
   }
 
   @override
