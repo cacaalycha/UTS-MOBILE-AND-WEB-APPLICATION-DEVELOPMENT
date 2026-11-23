@@ -179,6 +179,73 @@ class PesananBentrokException implements Exception {
   String toString() => pesan;
 }
 
+/// Dilempar saat operasi ubah/hapus ditolak oleh aturan bisnis Minggu 11:
+/// bukan pemilik dokumen atau status sudah bukan `Menunggu`.
+class OperasiDitolakException implements Exception {
+  const OperasiDitolakException(this.pesan);
+
+  final String pesan;
+
+  @override
+  String toString() => pesan;
+}
+
+/// ATURAN BISNIS BERSAMA (Minggu 11).
+///
+/// Ditulis sekali di sini supaya dipakai oleh `LayananFirestore` maupun
+/// `LayananMemori` — persis seperti anjuran modul. Security Rules memeriksa
+/// hal yang sama di server; fungsi ini memberi pesan galat yang ramah di UI.
+void pastikanBolehDiubah({
+  required Map<String, dynamic> data,
+  required String uidAktif,
+  required String aksi,
+}) {
+  final pemilik = data['id_pengguna'] as String? ?? '';
+  if (pemilik != uidAktif) {
+    throw OperasiDitolakException(
+      'Hanya pemilik pesanan yang boleh meng$aksi data ini.',
+    );
+  }
+
+  final status = (data['status'] as String?) ?? statusMenunggu;
+  if (status.toLowerCase() != statusMenunggu.toLowerCase()) {
+    throw OperasiDitolakException(
+      'Pesanan berstatus $status tidak boleh di$aksi. '
+      'Hanya pesanan berstatus $statusMenunggu yang bisa diubah atau dihapus.',
+    );
+  }
+}
+
+/// Cek bentrok yang bisa dipakai ulang saat tambah DAN saat ubah.
+///
+/// [abaikanId] wajib diisi pada mode ubah agar dokumen yang sedang diedit
+/// tidak menganggap dirinya sendiri sebagai bentrok (jebakan pada modul).
+bool adaBentrokPesanan({
+  required Iterable<PesananFirestore> daftar,
+  required String idCase,
+  required String tanggal,
+  required String jam,
+  String? abaikanId,
+}) {
+  return daftar.any(
+    (item) =>
+        item.idPesanan != abaikanId &&
+        item.idCase == idCase &&
+        item.tanggal == tanggal &&
+        item.jam == jam &&
+        item.status.toLowerCase() != statusDibatalkan.toLowerCase(),
+  );
+}
+
+/// Pesan penolakan bentrok yang konsisten untuk tambah maupun ubah.
+String pesanBentrok({
+  required String namaCase,
+  required String tanggal,
+  required String jam,
+}) =>
+    '$namaCase sudah dipesan pada tanggal $tanggal jam $jam. '
+    'Pilih jam pengambilan lain.';
+
 @immutable
 class PesananFirestore {
   const PesananFirestore({
@@ -195,6 +262,7 @@ class PesananFirestore {
     this.status = statusMenunggu,
     this.catatan = '',
     this.dibuatPada,
+    this.diubahPada,
   });
 
   final String idPesanan;
@@ -220,6 +288,15 @@ class PesananFirestore {
   final String catatan;
   final DateTime? dibuatPada;
 
+  /// Diisi oleh `FieldValue.serverTimestamp()` pada operasi ubah (Minggu 11).
+  /// Berbeda dengan `dibuatPada` yang tidak boleh berubah.
+  final DateTime? diubahPada;
+
+  /// Menu Ubah/Hapus hanya aktif untuk pesanan berstatus Menunggu.
+  /// Sama dengan `resource.data.status == 'Menunggu'` pada Security Rules.
+  bool get bisaDiubah =>
+      status.toLowerCase() == statusMenunggu.toLowerCase();
+
   Map<String, dynamic> toMap() => {
         'id_pesanan': idPesanan,
         'id_pengguna': idPengguna,
@@ -234,6 +311,7 @@ class PesananFirestore {
         'status': status,
         'catatan': catatan,
         'dibuat_pada': dibuatPada?.toIso8601String(),
+        'diubah_pada': diubahPada?.toIso8601String(),
       };
 
   factory PesananFirestore.fromMap(
@@ -254,6 +332,7 @@ class PesananFirestore {
         status: (map['status'] as String?) ?? statusMenunggu,
         catatan: (map['catatan'] as String?) ?? '',
         dibuatPada: bacaWaktu(map['dibuat_pada']),
+        diubahPada: bacaWaktu(map['diubah_pada']),
       );
 }
 

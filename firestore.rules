@@ -1,21 +1,46 @@
-// Praktikum Minggu 10 — Cloud Firestore (Case iPhone Caca)
+// Praktikum Minggu 11 — Cloud Firestore (Case iPhone Caca)
 //
 // Salin seluruh isi file ini ke Firebase Console:
 //   Build > Firestore Database > tab Rules > Publish
 //
-// Aturan dasar sesuai modul: hanya pengguna yang SUDAH LOGIN yang boleh
-// membaca atau menulis. Jangan memakai `allow read, write: if true;`
-// (Test Mode) lebih dari beberapa menit.
+// Perubahan dari Minggu 10: tulisan tidak lagi "semua yang login boleh semua".
+// Sekarang berlaku aturan KEPEMILIKAN:
+//   - users/{uid}     hanya bisa dibaca/ditulis oleh pemilik uid tersebut.
+//   - cases/{id_case} master data: semua yang login boleh baca & tulis.
+//   - orders/{id}     buat hanya dengan id_pengguna == uid dan status Menunggu;
+//                     ubah/hapus hanya oleh pemilik DAN status masih Menunggu.
 //
-// Catatan: isolasi data per pengguna (`orders` hanya milik uid sendiri)
-// dijamin di lapisan aplikasi lewat .where('id_pengguna', isEqualTo: uid).
-// Perketat lebih lanjut pada Minggu 11 saat pembahasan keamanan lanjutan.
+// Aturan bisnis yang sama juga ditulis di kode (lib/data/data_simulasi.dart)
+// supaya pesan galat di UI jelas. Rules ini adalah lapisan pengaman terakhir
+// bila API dipanggil langsung dari luar aplikasi.
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function sudahMasuk() {
+      return request.auth != null;
+    }
+
+    function pemilik(data) {
+      return sudahMasuk() && data.id_pengguna == request.auth.uid;
+    }
+
+    match /users/{uid} {
+      allow read, write: if sudahMasuk() && request.auth.uid == uid;
+    }
+
+    match /cases/{idCase} {
+      allow read: if sudahMasuk();
+      allow write: if sudahMasuk();
+    }
+
+    match /orders/{idPesanan} {
+      allow create: if pemilik(request.resource.data)
+                    && request.resource.data.status == 'Menunggu';
+      allow read: if sudahMasuk();
+      allow update, delete: if pemilik(resource.data)
+                            && resource.data.status == 'Menunggu';
     }
   }
 }
