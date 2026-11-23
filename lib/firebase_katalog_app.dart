@@ -75,7 +75,9 @@ class _FirebaseKatalogAppState extends State<FirebaseKatalogApp> {
 
     _router = createRouter(
       _authProvider,
-      initialLocation: '/beranda',
+      // Admin (FIREBASE_ADMIN_EMAILS) langsung ke panel admin;
+      // pembeli tetap ke Beranda katalog.
+      initialLocation: _authProvider.isAdmin ? '/admin' : '/beranda',
       firebaseMode: true,
       layananMinggu10: _layananMinggu10,
       statusMinggu10: _statusFirestore,

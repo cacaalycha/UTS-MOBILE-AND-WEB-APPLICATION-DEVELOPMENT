@@ -61,7 +61,7 @@ Prototipe UTS memakai **mock data / mock repository** (tanpa backend). Mulai Min
 | `lib/widgets/components/sapaan_firestore.dart` | Sapaan real-time dari `users/{uid}` |
 | `lib/firebase_katalog_app.dart` | Root mode Firebase: menyuntik `Provider<LayananData>`, membuat profil & auto-seed `cases` |
 | `firestore.rules` | Aturan keamanan `allow read, write: if request.auth != null;` |
-| `test/` | 10 file widget/unit test, **80 test** (validator & form Minggu 9 + model/layanan/halaman Minggu 10) |
+| `test/` | 11 file widget/unit test, **83 test** (validator & form Minggu 9 + model/layanan/halaman Minggu 10) |
 | `android/`, `ios/`, `web/`, `windows/`, `linux/`, `macos/` | Konfigurasi platform bawaan Flutter (termasuk **Flutter Web**) |
 | `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `.metadata` | Dependensi dan konfigurasi project |
 | `Proyek_UTS_Case_iPhone_Caca_Proposal.docx` / `.pdf` | Proposal UTS lengkap |
@@ -201,29 +201,34 @@ yang tampil adalah alur login Minggu 9; bila tidak, yang tampil adalah prototipe
 UTS berbasis mock. Cara mengisi konfigurasi dijelaskan di
 [`docs/PANDUAN_FIREBASE_MINGGU_09.md`](docs/PANDUAN_FIREBASE_MINGGU_09.md).
 
-> **Kenapa akun Firebase selalu tampil sebagai pembeli?** Firebase
-> Authentication hanya menyimpan email, UID, dan password — **tidak ada data
-> peran/role**. Di `lib/data/repositories/impl/firebase_auth_repo.dart` semua
-> akun Firebase sengaja dipetakan ke `UserRole.pembeli`, dan router mode
-> Firebase mengalihkan `/admin` ke `/beranda` (batas praktikum Minggu 9–10:
-> autentikasi + Create/Read Firestore). Nama akun seperti "admin" atau email
-> `@gmail.com` **tidak** otomatis menjadikannya admin.
->
-> **Untuk masuk sebagai admin dan mengelola produk**, jalankan **mode prototipe
-> UTS tanpa konfigurasi**:
-> ```bash
-> flutter run -d chrome
+> **Peran admin pada mode Firebase.** Firebase Authentication hanya menyimpan
+> uid, email, dan password — **tidak ada field role**. Karena Minggu 9/10 belum
+> membahas Custom Claims / Admin SDK, peran ditentukan dari daftar email pada
+> konfigurasi lokal (`firebase-config.json`, **tidak di-commit**):
+> ```json
+> { "FIREBASE_ADMIN_EMAILS": "adminf@gmail.com,owner@toko.com" }
 > ```
-> lalu login `admin@caca.test` / `123456`. Mode ini memakai `MockAuthRepository`
-> yang memang punya dua peran, dan halaman admin (tambah/edit/hapus produk)
-> aktif penuh. Perlu diingat: kelola produk tersebut berbasis data mock
-> (in-memory), belum tersimpan ke Firestore — Update/Delete direncanakan Minggu 11.
+> `lib/utils/peran_firebase.dart` membaca nilai itu; `FirebaseAuthRepository`
+> memberi `UserRole.admin` hanya untuk email yang terdaftar, dan router mode
+> Firebase langsung membuka **`/admin`** bagi admin (pembeli tetap ke
+> `/beranda`). Akun lain otomatis menjadi pembeli. Tombol
+> **"Praktikum Minggu 10 — Firestore"** tersedia di Dashboard Admin supaya
+> halaman Firestore tetap bisa diakses. Bila nilai kosong, perilaku lama
+> berlaku: semua akun Firebase adalah pembeli.
+>
+> Alternatif **mode prototipe UTS** (tanpa konfigurasi) juga punya admin:
+> `flutter run -d chrome` → login `admin@caca.test` / `123456`.
+>
+> ⚠️ Kelola produk di kedua mode masih memakai `MockProductRepository`
+> (in-memory), **belum** menulis ke collection `cases` Firestore. Menyambungkan
+> CRUD produk ke Firestore membutuhkan Update/Delete yang direncanakan
+> **Minggu 11**.
 
 ### Langkah 5 — Jalankan pengujian
 
 ```bash
 flutter analyze   # No issues found!
-flutter test      # All tests passed! (80 test)
+flutter test      # All tests passed! (83 test)
 ```
 
 ### Akun Demo
@@ -402,7 +407,7 @@ kolom "Hasil nyata" dilengkapi setelah uji langsung di Chrome dan Firebase Conso
 cd D:/dev/caseipcaca
 flutter analyze
 env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-  NO_PROXY=localhost,127.0.0.1 flutter test      # 80 test, All tests passed!
+  NO_PROXY=localhost,127.0.0.1 flutter test      # 83 test, All tests passed!
 MSYS_NO_PATHCONV=1 flutter build web --release \
   --dart-define-from-file=firebase-config.json   # √ Built build/web
 flutter run -d chrome --dart-define-from-file=firebase-config.json
@@ -428,7 +433,7 @@ dihapus setelah pengecekan).
 - Screenshot tiga collection: `screenshots/12-firestore-users.png`, `13-firestore-cases.png`, `14-firestore-orders.png`
 
 Dependensi mengikuti modul: `cloud_firestore:7.1.0`. `flutter analyze` bersih,
-`flutter test` lulus **80 test**, dan `flutter build web --release` berhasil.
+`flutter test` lulus **83 test**, dan `flutter build web --release` berhasil.
 Modul meminta minimal 2 commit baru ter-push; Minggu 10 menyumbang 3 commit
 bertahap.
 

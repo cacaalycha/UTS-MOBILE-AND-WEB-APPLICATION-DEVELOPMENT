@@ -241,7 +241,7 @@ tersebut dipetakan ke endpoint RESTful `GET` (baca), `POST` (tambah),
 ```bash
 cd D:/dev/caseipcaca
 flutter analyze                    # No issues found! (0 issues)
-flutter test                       # All tests passed! (80 test)
+flutter test                       # All tests passed! (83 test)
 MSYS_NO_PATHCONV=1 flutter build web --release \
   --dart-define-from-file=firebase-config.json
 flutter run -d chrome --dart-define-from-file=firebase-config.json

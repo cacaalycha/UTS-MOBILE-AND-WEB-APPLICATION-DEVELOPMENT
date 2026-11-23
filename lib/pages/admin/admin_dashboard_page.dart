@@ -13,7 +13,14 @@ import '../../widgets/components/section_header.dart';
 
 /// Halaman Dashboard Admin.
 class AdminDashboardPage extends StatelessWidget {
-  const AdminDashboardPage({super.key});
+  const AdminDashboardPage({
+    super.key,
+    this.tampilkanPintasanFirestore = false,
+  });
+
+  /// Hanya aktif pada mode Firebase, karena halaman Minggu 10 membutuhkan
+  /// `Provider<LayananData>` yang tidak disediakan oleh mode mock UTS.
+  final bool tampilkanPintasanFirestore;
 
   @override
   Widget build(BuildContext context) {
@@ -198,6 +205,14 @@ class AdminDashboardPage extends StatelessWidget {
                     icon: Icons.add_rounded,
                     onPressed: () => context.push('/admin/produk/form'),
                   ),
+                  if (tampilkanPintasanFirestore) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    SecondaryButton(
+                      label: 'Praktikum Minggu 10 — Firestore',
+                      icon: Icons.cloud_outlined,
+                      onPressed: () => context.go('/firestore'),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Panel admin ini memakai data mock. Setelah Firebase aktif, '

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../models/user_model.dart';
+import '../../../utils/peran_firebase.dart';
 import '../auth_repository.dart';
 
 /// Jembatan antara Firebase Authentication dan `AuthProvider` prototipe UTS.
@@ -25,9 +26,10 @@ class FirebaseAuthRepository implements AuthRepository {
           ? (email.isEmpty ? 'Pengguna' : email.split('@').first)
           : nama,
       email: email,
-      // Praktikum Minggu 9 belum memakai Firestore/role, jadi semua akun
-      // Firebase diperlakukan sebagai pembeli.
-      role: UserRole.pembeli,
+      // Firebase Auth tidak menyimpan role. Peran admin diambil dari
+      // FIREBASE_ADMIN_EMAILS (lihat lib/utils/peran_firebase.dart);
+      // akun lain tetap menjadi pembeli.
+      role: apakahAdminFirebase(email) ? UserRole.admin : UserRole.pembeli,
     );
   }
 

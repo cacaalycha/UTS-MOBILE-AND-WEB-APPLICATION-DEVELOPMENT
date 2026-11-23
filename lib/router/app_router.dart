@@ -40,15 +40,37 @@ GoRouter createRouter(
     redirect: (context, state) {
       final location = state.matchedLocation;
 
-      // Mode Minggu 9: status login sudah dijaga `CekStatusLogin` di luar
+      // Mode Minggu 9/10: status login sudah dijaga `CekStatusLogin` di luar
       // router, jadi jangan pernah mengalihkan ke halaman login mock.
-      // Halaman auth dan area admin (role belum ada di Firebase) dibelokkan
-      // ke Beranda agar pengguna tetap berada di katalog pembeli.
+      // Peran berasal dari FIREBASE_ADMIN_EMAILS (bukan dari Firebase Auth).
       if (firebaseMode) {
         final isAuthPage = location == '/login' || location == '/register';
         final isAdminArea =
             location == '/admin' || location.startsWith('/admin/');
-        if (isAuthPage || isAdminArea) return '/beranda';
+        final tujuanAwal = auth.isAdmin ? '/admin' : '/beranda';
+
+        if (isAuthPage) return tujuanAwal;
+        if (isAdminArea && !auth.isAdmin) return '/beranda';
+
+        // Admin memakai shell admin (2 tab). Jangan biarkan admin membuka
+        // shell pembeli (4 tab) karena AppShell memilih item navigasi
+        // berdasarkan peran, bukan berdasarkan shell yang sedang aktif.
+        if (auth.isAdmin) {
+          const buyerRoots = [
+            '/beranda',
+            '/katalog',
+            '/keranjang',
+            '/pesanan',
+          ];
+          final isBuyerRoot = buyerRoots.any(
+            (root) => location == root || location.startsWith('$root/detail'),
+          );
+          if (isBuyerRoot ||
+              location == '/pilih-model' ||
+              location == '/checkout') {
+            return '/admin';
+          }
+        }
         return null;
       }
 
@@ -141,7 +163,9 @@ GoRouter createRouter(
             routes: [
               GoRoute(
                 path: '/admin',
-                builder: (context, state) => const AdminDashboardPage(),
+                builder: (context, state) => AdminDashboardPage(
+                  tampilkanPintasanFirestore: firebaseMode,
+                ),
               ),
             ],
           ),

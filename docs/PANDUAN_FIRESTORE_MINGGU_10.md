@@ -161,7 +161,7 @@ Tanpa `--dart-define-from-file`, `DefaultFirebaseOptions.isConfigured` bernilai
 ```bash
 flutter analyze                    # No issues found!
 env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-  NO_PROXY=localhost,127.0.0.1 flutter test   # All tests passed! (80 test)
+  NO_PROXY=localhost,127.0.0.1 flutter test   # All tests passed! (83 test)
 ```
 
 ---
