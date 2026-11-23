@@ -186,18 +186,38 @@ MSYS_NO_PATHCONV=1 flutter build web --release \
 flutter build web --release
 ```
 
-> **Minggu 10 — sebelum menjalankan mode Firebase:** aktifkan
-> **Build → Firestore Database → Create database** (Standard, paket Spark) di
-> Firebase Console, lalu publish aturan dari `firestore.rules`. Tanpa langkah ini
-> aplikasi tetap terbuka, tetapi Beranda Firestore menampilkan banner peringatan
-> dan data belum tersimpan. Rincian ada di
-> [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md).
+> **Minggu 10 — setup Console (sudah selesai 22 November 2026):** database
+> Firestore `(default)` aktif pada paket Spark dan aturan `request.auth != null`
+> sudah dipublikasikan. Untuk project baru: **Databases & Storage → Firestore
+> Database → Create database** (Standard / Spark, `asia-southeast2` Jakarta),
+> lalu publish aturan dari `firestore.rules`. Bila database belum aktif,
+> aplikasi tetap terbuka tetapi Beranda Firestore menampilkan banner peringatan.
+> Rincian ada di [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md)
+> dan [`docs/langkah-aktifkan-firestore.png`](docs/langkah-aktifkan-firestore.png).
 
 Aplikasi memiliki **dua mode** yang dipilih otomatis di `lib/main.dart`: bila
 lima nilai `FIREBASE_*` diberikan, `Firebase.initializeApp()` dijalankan dan
 yang tampil adalah alur login Minggu 9; bila tidak, yang tampil adalah prototipe
 UTS berbasis mock. Cara mengisi konfigurasi dijelaskan di
 [`docs/PANDUAN_FIREBASE_MINGGU_09.md`](docs/PANDUAN_FIREBASE_MINGGU_09.md).
+
+> **Kenapa akun Firebase selalu tampil sebagai pembeli?** Firebase
+> Authentication hanya menyimpan email, UID, dan password — **tidak ada data
+> peran/role**. Di `lib/data/repositories/impl/firebase_auth_repo.dart` semua
+> akun Firebase sengaja dipetakan ke `UserRole.pembeli`, dan router mode
+> Firebase mengalihkan `/admin` ke `/beranda` (batas praktikum Minggu 9–10:
+> autentikasi + Create/Read Firestore). Nama akun seperti "admin" atau email
+> `@gmail.com` **tidak** otomatis menjadikannya admin.
+>
+> **Untuk masuk sebagai admin dan mengelola produk**, jalankan **mode prototipe
+> UTS tanpa konfigurasi**:
+> ```bash
+> flutter run -d chrome
+> ```
+> lalu login `admin@caca.test` / `123456`. Mode ini memakai `MockAuthRepository`
+> yang memang punya dua peran, dan halaman admin (tambah/edit/hapus produk)
+> aktif penuh. Perlu diingat: kelola produk tersebut berbasis data mock
+> (in-memory), belum tersimpan ke Firestore — Update/Delete direncanakan Minggu 11.
 
 ### Langkah 5 — Jalankan pengujian
 
