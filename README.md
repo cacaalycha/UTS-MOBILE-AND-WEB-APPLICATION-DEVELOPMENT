@@ -10,6 +10,8 @@
 > **Pembaruan Minggu 9:** repositori ini sekarang juga memuat alur login **Firebase Authentication** (Email/Password, target Chrome, paket Spark). Lihat [bagian 13](#13-praktikum-minggu-9--firebase-authentication) serta [`docs/LAPORAN_MINGGU_09.md`](docs/LAPORAN_MINGGU_09.md).
 >
 > **Pembaruan Minggu 10:** data katalog dan pesanan kini tersimpan permanen di **Cloud Firestore** (tiga collection `users`, `cases`, `orders`) dan tampil real-time lewat `StreamBuilder`. Lihat [bagian 14](#14-praktikum-minggu-10--cloud-firestore), [`docs/PANDUAN_FIRESTORE_MINGGU_10.md`](docs/PANDUAN_FIRESTORE_MINGGU_10.md), dan [`docs/LAPORAN_MINGGU_10.md`](docs/LAPORAN_MINGGU_10.md).
+>
+> **Pembaruan Minggu 11:** siklus CRUD lengkap — pesanan bisa **diubah** dan **dihapus** oleh pemiliknya selama masih berstatus Menunggu, dengan dialog konfirmasi dan Security Rules kepemilikan. Lihat [bagian 15](#15-praktikum-minggu-11--crud-edit-hapus), [`docs/PANDUAN_CRUD_MINGGU_11.md`](docs/PANDUAN_CRUD_MINGGU_11.md), dan [`docs/LAPORAN_MINGGU_11.md`](docs/LAPORAN_MINGGU_11.md).
 
 ---
 
@@ -60,8 +62,8 @@ Prototipe UTS memakai **mock data / mock repository** (tanpa backend). Mulai Min
 | `lib/pages/minggu10/` | Beranda Firestore, Daftar Case, Form Pesanan, Pesanan Saya |
 | `lib/widgets/components/sapaan_firestore.dart` | Sapaan real-time dari `users/{uid}` |
 | `lib/firebase_katalog_app.dart` | Root mode Firebase: menyuntik `Provider<LayananData>`, membuat profil & auto-seed `cases` |
-| `firestore.rules` | Aturan keamanan `allow read, write: if request.auth != null;` |
-| `test/` | 11 file widget/unit test, **83 test** (validator & form Minggu 9 + model/layanan/halaman Minggu 10) |
+| `firestore.rules` | Aturan keamanan: login required + kepemilikan `orders` + status `Menunggu` (Minggu 11) |
+| `test/` | 14 file widget/unit test, **107 test** (Minggu 9, Minggu 10, dan aturan/layanan/UI Minggu 11) |
 | `android/`, `ios/`, `web/`, `windows/`, `linux/`, `macos/` | Konfigurasi platform bawaan Flutter (termasuk **Flutter Web**) |
 | `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `.metadata` | Dependensi dan konfigurasi project |
 | `Proyek_UTS_Case_iPhone_Caca_Proposal.docx` / `.pdf` | Proposal UTS lengkap |
@@ -98,7 +100,14 @@ Prototipe UTS memakai **mock data / mock repository** (tanpa backend). Mulai Min
 - **Pesanan Saya (Read)** — `StreamBuilder` + `.snapshots()` terfilter per `uid`, menangani keadaan loading / error / kosong, dan bertahan setelah refresh Chrome.
 - **Security Rules** — hanya pengguna terautentikasi yang boleh membaca/menulis.
 
-### E. Prioritas Fitur
+### E. Fitur Minggu 11 (CRUD lengkap)
+- **Ubah pesanan** — menu Ubah membuka form yang sama dalam mode ubah; isian terisi data lama dan tombol menjadi **Simpan Perubahan**.
+- **Field audit aman** — memakai `doc.update()`, bukan `set()`; `dibuat_pada`, `id_pengguna`, dan `status` tidak berubah, `diubah_pada` ditambahkan.
+- **Bentrok saat ubah** — kombinasi case+tanggal+jam dicek ulang, tetapi dokumen yang sedang diubah dikecualikan (`abaikanId`).
+- **Hapus dengan konfirmasi** — `showDialog<bool>` menyebut case, tanggal, dan jam; **Batal** tidak mengubah data; **Hapus** memanggil `delete()` dan memunculkan SnackBar.
+- **Rules kepemilikan** — ubah/hapus hanya untuk `id_pengguna == uid` dan status `Menunggu`; menu dinonaktifkan bila status terkunci.
+
+### F. Prioritas Fitur
 Urutan prioritas: (1) pemilihan model iPhone, (2) Compatibility Checker, (3) katalog & detail, (4) keranjang + checkout tervalidasi, (5) riwayat pesanan, (6) admin. Alur inti "pilih model → cari case yang cocok → pesan" diprioritaskan karena itulah yang langsung menyelesaikan masalah salah beli case.
 
 ## 5. Desain UI/UX dan Prototype Figma
@@ -137,7 +146,8 @@ Berisi: problem statement, persona, user story, kebutuhan fungsional & non-fungs
 | Figma | Perancangan UI/UX dan prototype |
 | GitHub / GitHub Pages | Source code, riwayat commit, dan hosting demo web |
 | Firebase Authentication (`firebase_core` 5.1.0, `firebase_auth` 7.0.1) | Praktikum Minggu 9: daftar, masuk, keluar, cek status login (Email/Password, target Chrome) |
-| Cloud Firestore (`cloud_firestore` 7.1.0) | Minggu 10: `users`, `cases`, `orders` — `WriteBatch`, `FieldValue.serverTimestamp()`, `.snapshots()` + `StreamBuilder`, aturan `request.auth != null` |
+| Cloud Firestore (`cloud_firestore` 7.1.0) | Minggu 10: `users`, `cases`, `orders` — `WriteBatch`, `FieldValue.serverTimestamp()`, `.snapshots()` + `StreamBuilder` |
+| Firestore CRUD + Security Rules | Minggu 11: `update()`/`delete()`, cek bentrok dengan `abaikanId`, dialog konfirmasi, Rules kepemilikan & status Menunggu |
 
 ## 8. Cara Menjalankan Project
 
@@ -228,7 +238,7 @@ UTS berbasis mock. Cara mengisi konfigurasi dijelaskan di
 
 ```bash
 flutter analyze   # No issues found!
-flutter test      # All tests passed! (83 test)
+flutter test      # All tests passed! (107 test)
 ```
 
 ### Akun Demo
@@ -259,7 +269,9 @@ Untuk menjalankan versi web UTS secara lokal, cukup `flutter run -d chrome` dari
 
 **Minggu 9 (sekarang):** sesi autentikasi tersimpan permanen oleh Firebase Authentication. Katalog, keranjang, dan pesanan UTS masih memakai mock repository di `lib/data/repositories/impl/` (data in-memory) dan hilang saat aplikasi dijalankan ulang.
 
-**Minggu 10 (terimplementasi):** **Cloud Firestore** dengan tiga collection untuk praktikum — `users/{uid}`, `cases/{id_case}`, `orders/{auto-ID}`. Field `nama_case` sengaja didenormalisasi ke `orders` karena Firestore tidak mendukung `JOIN`. Abstraksi `LayananData` memisahkan UI dari Firebase, sehingga `LayananFirestore` dipakai saat runtime dan `LayananMemori` dipakai pada widget test. Rancangan database UTS jangka panjang (`users`, `iphones`, `cases`, `carts`, `orders` + sub-koleksi `items`) tetap tersedia di proposal dan `docs/firestore-schema.png`. Aturan keamanan: `allow read, write: if request.auth != null;`.
+**Minggu 10 (terimplementasi):** **Cloud Firestore** dengan tiga collection untuk praktikum — `users/{uid}`, `cases/{id_case}`, `orders/{auto-ID}`. Field `nama_case` sengaja didenormalisasi ke `orders` karena Firestore tidak mendukung `JOIN`. Abstraksi `LayananData` memisahkan UI dari Firebase, sehingga `LayananFirestore` dipakai saat runtime dan `LayananMemori` dipakai pada widget test. Rancangan database UTS jangka panjang (`users`, `iphones`, `cases`, `carts`, `orders` + sub-koleksi `items`) tetap tersedia di proposal dan `docs/firestore-schema.png`. Awalnya aturan keamanan `allow read, write: if request.auth != null;`; pada Minggu 11 diperketat seperti di bawah.
+
+**Minggu 11 (terimplementasi):** Rules **kepemilikan** — `users/{uid}` hanya untuk uid bersangkutan, `cases` master data bisa ditulis oleh pengguna login, dan `orders` hanya bisa dibuat dengan `id_pengguna == uid` serta status `Menunggu`, serta hanya bisa diubah/dihapus oleh pemilik selama status masih `Menunggu`. Operasi ubah memakai `doc.update()` (bukan `set()`) agar `dibuat_pada`, `id_pengguna`, dan `status` tetap utuh, dengan `diubah_pada` sebagai field audit baru. Rules lokal ada di `firestore.rules` dan **wajib di-Publish di Console**. Kelola produk pada halaman admin masih memakai mock; menyambungkannya ke `cases` adalah pekerjaan berikutnya.
 
 ## 11. Screenshot Aplikasi
 
@@ -307,11 +319,19 @@ Berkas berikut diambil dari **Build → Firestore Database → Data** setelah pr
 | `screenshots/14-firestore-orders.png` | Collection `orders`, minimal 1 dokumen pesanan |
 | `screenshots/15-firestore-rules.png` | Tab Rules: `allow read, write: if request.auth != null;` |
 
-> Berkas-berkas di atas **belum tersedia** dan sengaja tidak dibuat-reka: screenshot hanya dapat diambil dari project Firebase milik mahasiswa. Setelah disimpan, tautan ini dapat disertakan dalam pengumpulan tugas.
+### L. Bukti CRUD — Minggu 11
+
+| Berkas | Isi |
+|---|---|
+| `screenshots/16-firestore-rules-m11.png` | Tab Rules dengan aturan kepemilikan yang sudah di-Publish |
+| `screenshots/17-ubah-pesanan.png` | Form mode ubah berisi data lama + tombol "Simpan Perubahan" |
+| `screenshots/18-dialog-hapus.png` | Dialog konfirmasi hapus yang menyebut case, tanggal, dan jam |
+
+> Berkas-berkas di atas **belum tersedia** dan sengaja tidak dibuat-reka: screenshot hanya dapat diambil dari project Firebase dan browser milik mahasiswa. Setelah disimpan, tautan ini dapat disertakan dalam pengumpulan tugas.
 
 ## 12. Riwayat Pengembangan
 
-Riwayat commit disusun bertahap mengikuti proses pengerjaan, bukan satu commit besar: inisialisasi project → model & data → repository & state → widget & tema → autentikasi → katalog & compatibility → keranjang/checkout/pesanan → admin → pengujian → dokumentasi & proposal → build web → **(Minggu 9)** koneksi Firebase → halaman Masuk/Daftar → cek status login & tombol Keluar → laporan praktikum → perbaikan temuan uji → **(Minggu 10)** setup Firestore + rules + model 3 collection → halaman & rute Minggu 10 + widget test → panduan, laporan, dan tabel uji.
+Riwayat commit disusun bertahap mengikuti proses pengerjaan, bukan satu commit besar: inisialisasi project → model & data → repository & state → widget & tema → autentikasi → katalog & compatibility → keranjang/checkout/pesanan → admin → pengujian → dokumentasi & proposal → build web → **(Minggu 9)** koneksi Firebase → halaman Masuk/Daftar → cek status login & tombol Keluar → laporan praktikum → perbaikan temuan uji → **(Minggu 10)** setup Firestore + rules + model 3 collection → halaman & rute Minggu 10 + widget test → panduan, laporan, dan tabel uji → dukungan peran admin di mode Firebase → **(Minggu 11)** rules kepemilikan + aturan bisnis → metode ubah/hapus di layer layanan → form mode ubah, menu aksi, dan dialog konfirmasi → panduan, laporan, dan tabel uji CRUD.
 
 ## 13. Praktikum Minggu 9 — Firebase Authentication
 
@@ -376,7 +396,7 @@ sama ditolak lewat `PesananBentrokException` sebelum `.set()`. Query memakai
 
 | Berkas | Peran |
 |---|---|
-| `firestore.rules` | `allow read, write: if request.auth != null;` (publish di Console) |
+| `firestore.rules` | Awalnya `request.auth != null`; Minggu 11 diperketat jadi aturan kepemilikan + status (publish di Console) |
 | `lib/data/data_simulasi.dart` | 3 model + `toMap/fromMap`, `bacaWaktu()`, 4 case awal |
 | `lib/services/layanan_data.dart` | Kontrak abstrak `LayananData` |
 | `lib/services/layanan_firestore.dart` | Satu-satunya tempat `FirebaseFirestore.instance` dipanggil |
@@ -407,7 +427,7 @@ kolom "Hasil nyata" dilengkapi setelah uji langsung di Chrome dan Firebase Conso
 cd D:/dev/caseipcaca
 flutter analyze
 env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
-  NO_PROXY=localhost,127.0.0.1 flutter test      # 83 test, All tests passed!
+  NO_PROXY=localhost,127.0.0.1 flutter test      # 107 test, All tests passed!
 MSYS_NO_PATHCONV=1 flutter build web --release \
   --dart-define-from-file=firebase-config.json   # √ Built build/web
 flutter run -d chrome --dart-define-from-file=firebase-config.json
@@ -433,9 +453,64 @@ dihapus setelah pengecekan).
 - Screenshot tiga collection: `screenshots/12-firestore-users.png`, `13-firestore-cases.png`, `14-firestore-orders.png`
 
 Dependensi mengikuti modul: `cloud_firestore:7.1.0`. `flutter analyze` bersih,
-`flutter test` lulus **83 test**, dan `flutter build web --release` berhasil.
-Modul meminta minimal 2 commit baru ter-push; Minggu 10 menyumbang 3 commit
-bertahap.
+`flutter test` lulus **83 test** pada tahap Minggu 10, dan
+`flutter build web --release` berhasil. Modul meminta minimal 2 commit baru
+ter-push; Minggu 10 menyumbang 3 commit bertahap.
+
+## 15. Praktikum Minggu 11 — CRUD: Edit, Hapus, dan Dialog Konfirmasi
+
+Batas pertemuan: **Chrome**, paket **Spark**, Update/Delete hanya oleh
+**pemilik** dengan status **Menunggu**. Tidak dibahas: peran admin persetujuan,
+soft delete, pencarian, atau upload berkas. Video panduan:
+https://www.youtube.com/watch?v=wliYRh2qDGY
+
+### Peta CRUD ↔ HTTP ↔ Firestore
+
+| Operasi | HTTP | Firestore | Penerapan |
+|---|---|---|---|
+| Create | `POST /orders` | `add()` / `set()` | Form Pesanan (Minggu 10) |
+| Read | `GET /orders` | `get()` / `.snapshots()` | `StreamBuilder` real-time |
+| Update | `PUT/PATCH /orders/{id}` | `doc(id).update()` | Menu Ubah → mode ubah |
+| Delete | `DELETE /orders/{id}` | `doc(id).delete()` | Menu Hapus → dialog konfirmasi |
+
+Aturan bisnis terpusat di `lib/data/data_simulasi.dart`:
+`pastikanBolehDiubah()` (pemilik + status Menunggu) dan `adaBentrokPesanan()`
+(dipakai ulang oleh tambah **dan** ubah, dengan `abaikanId` agar dokumen yang
+sedang diedit tidak menganggap dirinya bentrok). Keduanya dipanggil oleh
+`LayananFirestore` maupun `LayananMemori`, persis seperti anjuran modul.
+Edit memakai `update()` — bukan `set()` — agar `dibuat_pada`, `id_pengguna`,
+dan `status` tetap utuh; `diubah_pada` ditambahkan dengan
+`FieldValue.serverTimestamp()`.
+
+### Tabel uji CRUD (8 kasus)
+
+| # | Kasus uji | Hasil yang diharapkan | Status otomatis |
+|---|---|---|---|
+| 1 | Ubah data valid | Dokumen berubah; audit utuh; `diubah_pada` terisi | ✅ unit + widget test |
+| 2 | Ubah jadi bentrok | Ditolak pesan jadwal; data lama utuh | ✅ unit + widget test |
+| 3 | Ubah jam sendiri | Berhasil (dirinya dikecualikan) | ✅ unit test |
+| 4 | Ubah status terkunci | Menu nonaktif / ditolak Rules | ✅ UI test / ⏳ Console |
+| 5 | Hapus dengan konfirmasi | Dokumen hilang + SnackBar | ✅ widget test |
+| 6 | Hapus dibatalkan | Data tetap ada | ✅ widget test |
+| 7 | Hapus milik akun lain | Ditolak pesan pemilik / `permission-denied` | ✅ widget test / ⏳ Rules |
+| 8 | Rules lama belum di-Publish | Aturan keamanan belum berlaku | ⏳ uji di Console |
+
+### Langkah wajib di Console
+
+Buka **Firestore Database → Rules**, ganti dengan isi
+[`firestore.rules`](firestore.rules), lalu klik **Publish**. Tanpa itu,
+penolakan `permission-denied` tidak akan berjalan. Setelah itu uji di Chrome,
+isi kolom **Hasil nyata** di laporan, dan simpan tiga screenshot CRUD.
+
+### Dokumen praktikum
+
+- Panduan (CRUD↔HTTP, `set()` vs `update()`, aturan bisnis, Rules kepemilikan, Latihan 1–3, troubleshooting): [`docs/PANDUAN_CRUD_MINGGU_11.md`](docs/PANDUAN_CRUD_MINGGU_11.md)
+- Laporan (8 kasus uji, uji teman, refleksi, bukti commit): [`docs/LAPORAN_MINGGU_11.md`](docs/LAPORAN_MINGGU_11.md)
+- Screenshot: `screenshots/16-firestore-rules-m11.png`, `17-ubah-pesanan.png`, `18-dialog-hapus.png`
+
+`flutter analyze` bersih, `flutter test` lulus **107 test**, dan
+`flutter build web --release` berhasil. Modul meminta minimal 2 commit baru
+ter-push; Minggu 11 menyumbang 3 commit bertahap.
 
 ---
 
